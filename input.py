@@ -3,12 +3,13 @@ import serial, threading, time
 
 # Left -1, Idle 0, Right 1
 L_MAX = 20
-I_MAX = 40
+I_MAX = 30
 R_MAX = 60
 state = 0
 inputBufLock = threading.Lock()
 inputBuf = deque()
 exitFlag = 0
+
 
 def inputLogic():
 	"""Evaluate input buffer. Define three ranges
@@ -32,20 +33,17 @@ def inputLogic():
 		elif curr > I_MAX and curr <= R_MAX:
 			state = 1
 
-		if prevState != state:
-			print state
+		# if prevState != state:
+		# 	print state
 
-def main():
-	global exitFlag
+def inputRead():
 
-	t1 = threading.Thread(target = inputLogic)
-	t1.start()
 
 	# Init Serial
 	ser = serial.Serial('/dev/tty.usbserial-A9WFF5LH', 9600)
 
 	# Write all values into a buffer
-	while True:
+	while not exitFlag:
 		try:
 			time.sleep(0.2)
 			inputBufLock.acquire()
@@ -57,13 +55,23 @@ def main():
 			if inputBufLock.locked():
 				inputBufLock.release()
 
-	# Tell other thread to exit and join
-	exitFlag = 1
-	t1.join()
 
-	# Close serial 
-	ser.close()
-	print "Bye bye..."
+def main():
+	global exitFlag
+
+	t1 = threading.Thread(target = inputRead)
+	t1.start()
+
+	t2 = threading.Thread(target = inputLogic)
+	t2.start()
+
+
+
+	# t1.join()
+
+	# # Close serial 
+	# ser.close()
+	# print "Bye bye..."
 
 if __name__ == '__main__':
 	main()

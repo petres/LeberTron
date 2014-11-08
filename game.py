@@ -3,6 +3,7 @@ import serial
 import time
 import curses
 import random
+import input as inp
 from curses import wrapper
 
 
@@ -118,6 +119,9 @@ def printSpaceShip(p):
 
 def main(s):
     global screen
+
+    inp.main()
+
     screen = s
     screen.clear()
     screen.nodelay(1)
@@ -130,10 +134,10 @@ def main(s):
         c = screen.getch()
         if c == ord('q'):
             break  # Exit the while loop
-        elif c == curses.KEY_LEFT:
+        elif c == curses.KEY_LEFT or inp.state == -1:
             if (p - moveStepSize - spaceShipWidth/2) > 0: 
                 p -= moveStepSize
-        elif c == curses.KEY_RIGHT:
+        elif c == curses.KEY_RIGHT or inp.state == 1:
             if (p + moveStepSize + spaceShipWidth/2) < fieldSize[0]: 
                 p += moveStepSize
 
@@ -146,6 +150,10 @@ def main(s):
         if t%10 == 0:
             Object.createRandom(-t)
         t += 1
+
+    inp.exitFlag = 1
+    t1.join()
+    t2.join()
 
     screen.refresh()
 
