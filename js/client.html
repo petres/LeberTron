@@ -1,0 +1,80 @@
+<html>
+<head>
+	<title>Move the box</title>
+	<script src="socket.io/socket.io.js"></script>
+	<script src="http://code.jquery.com/jquery-1.7.1.min.js"></script>
+	<style type="text/css">
+		html {
+			margin: 0;
+		}
+		#container {
+			/*box-sizing: border-box;*/
+			margin: 100px auto;
+			width: 500px;
+			height: 20px;
+			border: 1px solid black;
+		}
+		#player {
+			/*position: absolute;*/
+			height:20px;
+			width: 20px;
+			/*bottom: 37px;*/
+			background: green;
+			transition: all 1s linear;
+			}
+		.ingred {
+			position: absolute;
+			background: red;
+			width: 10px;
+			height: 10px;
+			top: 100px;
+		}
+
+	</style>
+</head>
+<body>
+	<div id="container">
+		<div id="player"></div>
+	</div>
+
+	<script>
+
+
+		$(document).ready(function(){
+
+
+		var container = $("#container");
+		// var height = container.height();
+
+		// // while true {
+		// 	var ingred = $(document.createElement("div")).addClass("ingred");
+		// 	container.append(ingred);
+
+		// 	ingred.css("-webkit-transition-duration", "2s");
+		// 	ingred.css("-webkit-transform", "translate(0," + height + "px)");
+
+		// // }
+
+		//creating a new websocket
+		var min = 15;
+		var max = 40;
+		var socket = io.connect('http://localhost');
+		socket.on('notification', function (data) {
+			var _data = JSON.parse(data);
+			var pos = Math.floor(parseFloat(_data.dis));
+			//Value can sometimes be out of range
+			// if (pos >= min && pos <= max) {
+			if (pos > max) pos = max;
+			if (pos < min) pos = min;
+				console.log("orig ", pos);
+				// scale value to container width - movewidth
+				pos = Math.floor((pos - min) * (480 / (max - min))) ;
+				//console.log("calc ", pos)
+				$('#player').css("transform", "translate(" + pos +"px,0)");
+			// }
+		});
+
+		});
+	</script>
+</body>
+</html>
