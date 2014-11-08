@@ -2,6 +2,7 @@
 import serial
 import time
 import curses
+import random
 from curses import wrapper
 
 
@@ -30,6 +31,13 @@ class Object:
         self.sign = "O"
         Object.objects.append(self)
 
+    @classmethod
+    def createRandom(cls, y = 0):
+        x = random.randint(2, fieldSize[0] - 2)
+        Object((x,y))
+
+
+
 
 def printField():
     for i in range(fieldPos[0] - 1, fieldPos[0] + fieldSize[0] + 2):
@@ -52,7 +60,7 @@ def printObjects(t):
         if ys < 0:
             continue
 
-        screen.addstr(ys, x, o.sign, True)
+        addSign((x, ys), o.sign, True)
 
 fieldPos  = None
 fieldSize = None
@@ -63,7 +71,7 @@ def addSign(coords, sign, field = False):
         x += fieldPos[0]
         y += fieldPos[1]
     try:
-        screen.addstr(y, x, "X")
+        screen.addstr(y, x, sign)
     except Exception as e:
         print "terminalSize:", screen.getmaxyx()
         print "fieldPos:", fieldPos
@@ -94,7 +102,19 @@ Object((20,-20))
 
 Object((30,-10))
 
+moveStepSize = 3
+spaceShipWidth = 6
 
+def printSpaceShip(p):
+    addSign((p, fieldSize[1] - 1), "I", True)
+    addSign((p + 1, fieldSize[1] - 1), "*", True)
+    addSign((p + 2, fieldSize[1] - 1), "\\", True)
+    addSign((p - 1, fieldSize[1] - 1), "*", True)
+    addSign((p - 2, fieldSize[1] - 1), "/", True)
+
+    addSign((p + 1, fieldSize[1] - 2), "\\", True)
+    addSign((p, fieldSize[1] - 2), "I", True)
+    addSign((p - 1, fieldSize[1] - 2), "/", True)
 
 def main(s):
     global screen
@@ -111,16 +131,20 @@ def main(s):
         if c == ord('q'):
             break  # Exit the while loop
         elif c == curses.KEY_LEFT:
-            p -= 1
+            if (p - moveStepSize - spaceShipWidth/2) > 0: 
+                p -= moveStepSize
         elif c == curses.KEY_RIGHT:
-            p += 1
+            if (p + moveStepSize + spaceShipWidth/2) < fieldSize[0]: 
+                p += moveStepSize
 
 
         screen.clear()
         printField()
         printObjects(t)
-        addSign((p, fieldSize[1] - 1), "I", True)
+        printSpaceShip(p)
         time.sleep(.2)
+        if t%10 == 0:
+            Object.createRandom(-t)
         t += 1
 
     screen.refresh()
