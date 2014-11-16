@@ -1,25 +1,116 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 import serial, sys, traceback
-import time
+import time as timeLib
 import curses
 import random
 import input2 as inp
 from curses import wrapper
 
+STD_SPEED = 5
+
+
+time = 0
+
+obstacle1 = [
+         '''/O0O\ ''',
+        '''/     \ ''',
+        '''\_____/ '''
+    ]
+
+spaceShipSigns = [
+         '''/T\ ''',
+        '''/ _ \ ''',
+        '''TT TT '''
+    ]
+
+def getFromFile(fileName):
+    f = open("./objects/" + fileName + ".txt", 'r')
+    content = f.read()
+    signsArray = []
+    for line in content.split("\n"):
+        temp = line.strip()
+        signsArray.append(temp)
+    return signsArray
+
 
 class Object:
     objects = []
-    def __init__(self, coords):
+    def __init__(self, coords = None, signs = getFromFile("stone"), speed = None, randomX = False):
         self.coords = coords
-        self.sign = "O"
+        self.signs  = signs
+
+        if speed is None:
+            self.speed = random.randint(STD_SPEED - 2, STD_SPEED + 2)
+
         Object.objects.append(self)
 
-    @classmethod
-    def createRandom(cls, y = 0):
-        x = random.randint(2, fieldSize[0] - 2)
-        Object((x,y))
+        self.info = {}
+        self.info['maxHeight'] = len(signs)
+        self.info['maxWidth'] = 0
 
 
+        self.info['rHeight'] = (len(signs) - 1)/2
+
+        self.info['widths'] = []
+
+        for line in signs:
+            self.info['widths'].append(len(line))
+
+        self.info['maxWidth'] = max(self.info['widths'])
+        self.info['rWidth']  = (self.info['maxWidth'] - 1)/2
+
+        if randomX:
+            self.setRandomXPos()
+
+    def setRandomXPos(self, y = None):
+        if y is None:
+            y = -time/self.speed
+        x = random.randint(2 + self.info['rWidth'], fieldSize[0] - 2 - self.info['rWidth'])
+        self.coords = (x, y)
+
+
+    def getPosArray(self):
+        posArray = []
+        x, y = self.getMapCoords()
+        for i, width in enumerate(self.info["widths"]):
+            for j in range(width):
+                posArray.append((x - (width - 1)/2 + j, y - self.info["rHeight"] + i))
+        return posArray
+
+
+    def check(self):
+        global points
+
+        x, y = self.getMapCoords()
+        if y > fieldSize[1] + self.info['rHeight']:
+            Object.objects.remove(self)
+
+        if len(set(self.getPosArray()).intersection(spaceShip.getPosArray())) > 0:
+            Object.objects.remove(self)
+            points += 1
+
+
+
+    def getMapCoords(self):
+        return (self.coords[0], self.coords[1] + time/self.speed)
+
+
+    def draw(self):
+        x, y = self.getMapCoords()
+        if y < 0:
+            return
+
+        for i, line in enumerate(self.signs):
+            py = y - (len(self.signs) - 1)/2 + i
+            if py <= fieldSize[1]:
+                addSign((x - (len(line) - 1)/2, py), line, True)
+
+
+class SpaceShip(Object):
+    def getMapCoords(self):
+        return (self.coords[0], self.coords[1])
+    def check(self):
+        return
 
 
 def printField():
@@ -31,19 +122,7 @@ def printField():
         addSign((fieldPos[0] - 1, i), "X")
         addSign((fieldPos[0] + fieldSize[0] + 1, i), "X")
 
-def printObjects(t):
-    for o in list(Object.objects):
-        x, y = o.coords
-        ys = y + t/4
-        
-        if ys > fieldSize[1]:
-            Object.objects.remove(o)
-            continue
 
-        if ys < 0:
-            continue
-
-        addSign((x, ys), o.sign, True)
 
 fieldPos  = None
 fieldSize = None
@@ -62,7 +141,7 @@ def addSign(coords, sign, field = False):
         print >> sys.stderr, "error writing sign to:", x, y
         print >> sys.stderr, traceback.format_exc()
 
-        time.sleep(120)
+        timeLib.sleep(120)
         exit();
 
 
@@ -71,17 +150,44 @@ rightStatusWidth = 30
 
 def init():
     global fieldPos, fieldSize, statusPos
+
+    screen.clear()
+    screen.nodelay(1)
+    #screen.curs_set(0)
+    curses.curs_set(0)
+    curses.start_color()
+
     y, x = screen.getmaxyx()
-    y -= 3 
+    y -= 3
     x -= 3 + rightStatusWidth
     fieldPos = (1, 1)
     fieldSize = (x, y)
     statusPos = (x + 5, 0)
-    
+
+
+
+
+
+
+
+
+spaceShip = SpaceShip(signs = getFromFile("spaceShip"))
+
+spaceShip.coords = (0, 0)
+#print spaceShip.getPosArray()
+#exit()
+
+def initGame():
+    global time
+
+    time = 0
+    spaceShip.coords = (fieldSize[0]/2, fieldSize[1] - 2)
+
 
 moveStepSize = 3
-spaceShipWidth = 6
 points = 0
+
+
 
 def printStatus():
     x, y = statusPos
@@ -92,71 +198,69 @@ def printStatus():
 
     addSign((x, 6), "Game:")
     addSign((x, 7), "points:  " + str(points))
-    addSign((x, 7), "pos:     " + str(p))
+    addSign((x, 9), "time:    " + str(time))
+    addSign((x,10), "objects: " + str(len(Object.objects)))
 
 
-def printSpaceShip(p):
-    addSign((p, fieldSize[1] - 1), "I", True)
-    addSign((p + 1, fieldSize[1] - 1), "/", True)
-    addSign((p + 2, fieldSize[1] - 1), "\\", True)
-    addSign((p - 1, fieldSize[1] - 1), "\\", True)
-    addSign((p - 2, fieldSize[1] - 1), "/", True)
 
-    addSign((p + 1, fieldSize[1] - 2), "\\", True)
-    addSign((p, fieldSize[1] - 2), "I", True)
-    addSign((p - 1, fieldSize[1] - 2), "/", True)
+
+#def printSpaceShip():
+#    x, y = spaceShipPos
+#    for i, line in enumerate(spaceShipSigns):
+#        addSign((x - (len(line) - 1)/2, y - (len(spaceShipSigns) - 1)/2 + i),  line, True)
+
 
 
 distSize = (5, 30)
-p = 0
 
 def main(s):
-    global screen, p
+    global screen, spaceShipPos, time
+    screen = s
 
     inp.main()
 
-    screen = s
-    screen.clear()
-    screen.nodelay(1)
-    #screen.curs_set(0)
-    curses.curs_set(0)
-    curses.start_color()
     init()
-    t = 0
-    p = fieldSize[0]/2
+
+    initGame()
+
     while True:
         c = screen.getch()
+        x = spaceShip.coords[0]
         if c == ord('q'):
             break  # Exit the while loop
-        #elif c == curses.KEY_LEFT or inp.state == -1:
-        #    if (p - moveStepSize - spaceShipWidth/2) > 0: 
-        #        p -= moveStepSize
-        #elif c == curses.KEY_RIGHT or inp.state == 1:
-        #    if (p + moveStepSize + spaceShipWidth/2) < fieldSize[0]: 
-        #        p += moveStepSize
+        elif c == curses.KEY_LEFT or inp.state == -1:
+            if (x - moveStepSize - spaceShip.info['maxWidth']/2) > 0:
+                x -= moveStepSize
+        elif c == curses.KEY_RIGHT or inp.state == 1:
+            if (x + moveStepSize + spaceShip.info['maxWidth']/2) < fieldSize[0]:
+                x += moveStepSize
 
-        p = int(float(inp.curr - distSize[0])/(distSize[1] - distSize[0])*fieldSize[0])
+        #p = int(float(inp.curr - distSize[0])/(distSize[1] - distSize[0])*fieldSize[0])
 
-        if p > fieldSize[0] - spaceShipWidth:
-            p = fieldSize[0] - spaceShipWidth
-        elif p < spaceShipWidth:
-            p = spaceShipWidth
-        #p = 10
+        if x > fieldSize[0] - spaceShip.info['maxWidth']:
+            x = fieldSize[0] - spaceShip.info['maxWidth']
+        elif x < spaceShip.info['maxWidth']:
+            x = spaceShip.info['maxWidth']
+
+        spaceShip.coords = (x, spaceShip.coords[1])
 
         screen.clear()
         printField()
-        printObjects(t)
-        printSpaceShip(p)
+
+        for o in list(Object.objects):
+            o.check()
+
+        for o in list(Object.objects):
+            o.draw()
+
+        #printSpaceShip()
         printStatus()
-        time.sleep(.02)
-        if t%10 == 0:
-            Object.createRandom(-t)
-        t += 1
+        timeLib.sleep(.02)
+        if time%40 == 0:
+            Object(randomX = True)
+        time += 1
 
     inp.exitFlag = 1
-    #t1.join()
-    #t2.join()
-
     screen.refresh()
 
 wrapper(main)
