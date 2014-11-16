@@ -23,9 +23,10 @@ def getFromFile(fileName):
 
 class Object(object):
     objects = []
-    def __init__(self, coords = None, signs = getFromFile("stone"), speed = None, randomX = False):
+    def __init__(self, coords = None, signs = getFromFile("stone"), speed = None, randomX = False, color = None):
         self.coords = coords
         self.signs  = signs
+        self.color   = color
 
         if speed is None:
             self.speed = random.randint(STD_SPEED - 3, STD_SPEED + 3)
@@ -90,15 +91,21 @@ class Object(object):
         for i, line in enumerate(self.signs):
             py = y - (len(self.signs) - 1)/2 + i
             if py <= fieldSize[1] and py >= 0:
-                addSign((x - (len(line) - 1)/2, py), line, True)
+                addSign((x - (len(line) - 1)/2, py), line, field = True, color = self.color)
 
 
 class Obstacle(Object):
     obstacles = ['stone', 'bigStone']
     def collision(self):
+        global spaceShip
         gameStatus['lifes'] = gameStatus['lifes'] - 1
+
         if gameStatus['lifes'] == 0:
             endGame()
+        else:
+            Object.objects = []
+            spaceShip = SpaceShip(signs = getFromFile("spaceShip"), color = 3)
+            spaceShip.coords = (fieldSize[0]/2, fieldSize[1] - 2)
 
     def __init__(self, **args):
         if "signs" not in args:
@@ -115,6 +122,7 @@ class Goody(Object):
     def __init__(self, **args):
         if "signs" not in args:
             args["signs"] = getFromFile("vodka")
+            args["color"] = 2
         super(Goody, self).__init__(**args)
 
 
@@ -127,25 +135,28 @@ class SpaceShip(Object):
 
 def printField():
     for i in range(fieldPos[0] - 1, fieldPos[0] + fieldSize[0] + 2):
-        addSign((i, fieldPos[1] - 1), "X")
-        addSign((i, fieldPos[1] + fieldSize[1] + 1), "X")
+        addSign((i, fieldPos[1] - 1), "X", color = 78)
+        addSign((i, fieldPos[1] + fieldSize[1] + 1), "X", color = 78)
 
     for i in range(fieldPos[1] - 1, fieldPos[1] + fieldSize[1] + 2):
-        addSign((fieldPos[0] - 1, i), "X")
-        addSign((fieldPos[0] + fieldSize[0] + 1, i), "X")
+        addSign((fieldPos[0] - 1, i), "X", color = 78)
+        addSign((fieldPos[0] + fieldSize[0] + 1, i), "X", color = 78)
 
 
 
 fieldPos  = None
 fieldSize = None
 
-def addSign(coords, sign, field = False):
+def addSign(coords, sign, field = False, color = None):
     x, y = coords
     if field:
         x += fieldPos[0]
         y += fieldPos[1]
     try:
-        screen.addstr(y, x, sign, curses.A_BLINK)
+        if color:
+            screen.addstr(y, x, sign, curses.color_pair(color))
+        else:
+            screen.addstr(y, x, sign)
     except Exception as e:
         print >> sys.stderr, "terminalSize:", screen.getmaxyx()
         print >> sys.stderr, "fieldPos:", fieldPos
@@ -169,14 +180,16 @@ def init():
     curses.curs_set(0)
     curses.start_color()
 
+    curses.use_default_colors()
+    for i in range(0, curses.COLORS):
+        curses.init_pair(i + 1, i, -1)
+
     y, x = screen.getmaxyx()
     y -= 3
     x -= 3 + rightStatusWidth
     fieldPos = (1, 1)
     fieldSize = (x, y)
     statusPos = (x + 5, 0)
-
-
 
 
 
@@ -203,7 +216,7 @@ def initGame():
     global time, spaceShip
     screen.nodelay(1)
     Object.objects = []
-    spaceShip = SpaceShip(signs = getFromFile("spaceShip"))
+    spaceShip = SpaceShip(signs = getFromFile("spaceShip"), color = 3)
     time = 0
     spaceShip.coords = (fieldSize[0]/2, fieldSize[1] - 2)
     gameStatus['points'] = 0
