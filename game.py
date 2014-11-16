@@ -3,7 +3,7 @@ import serial, sys, traceback
 import time as timeLib
 import curses
 import random
-import input2 as inp
+import input as inp
 from curses import wrapper
 
 STD_SPEED = 5
@@ -218,7 +218,6 @@ def printStatus():
     x, y = statusPos
     addSign((x, 1), "Sensor:")
     addSign((x, 2), "cm:      " + str(inp.curr))
-    addSign((x, 3), "margins: " + str(inp.L_MAX) + " | " + str(inp.R_MAX))
     addSign((x, 4), "dir:     " + str(inp.state))
 
     addSign((x, 6), "Game:")
@@ -237,7 +236,7 @@ def printStatus():
 
 
 
-distSize = (5, 30)
+distSize = (15, 50)
 
 def main(s):
     global screen, spaceShipPos, time
@@ -261,7 +260,7 @@ def main(s):
             if (x + moveStepSize + spaceShip.info['maxWidth']/2) < fieldSize[0]:
                 x += moveStepSize
 
-        #p = int(float(inp.curr - distSize[0])/(distSize[1] - distSize[0])*fieldSize[0])
+        # x = int(float(inp.curr - distSize[0])/(distSize[1] - distSize[0])*fieldSize[0])
 
         if x > fieldSize[0] - spaceShip.info['maxWidth']:
             x = fieldSize[0] - spaceShip.info['maxWidth']

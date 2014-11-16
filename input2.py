@@ -15,7 +15,8 @@ curr = 0
 def inputRead():
 	global curr, state
 	# Init Serial
-	ser = serial.Serial('/dev/ttyACM0', 9600)
+	ser.Serial('/dev/tty.usbserial-A9WFF5LH', 9600)
+	#ser = serial.Serial('/dev/ttyACM0', 9600)
 	acc = 0
 
 	# Write all values into a buffer

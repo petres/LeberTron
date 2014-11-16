@@ -1,77 +1,77 @@
 from collections import deque
 import serial, threading, time
 
-# Left -1, Idle 0, Right 1
-L_MAX = 20
-I_MAX = 30
-R_MAX = 60
+"""
+Find sonar delay threshold
+try averageing multiple input values
+keep track of states
+assess different states
+"""
+
+
+SLIDING = True
+SLIDING_WINDOW_SIZE = 20
+
+STEARING = True
+STEARING_L_MAX = 20
+STEARING_I_MAX = 30
+STEARING_R_MAX = 60
+
 state = 0
-inputBufLock = threading.Lock()
-inputBuf = deque()
-exitFlag = 0
-
-
-def inputLogic():
-	"""Evaluate input buffer. Define three ranges
-	left, idle, right. """
-	global state
-
-	while not exitFlag:
-		if len(inputBuf) < 1:
-			time.sleep(0.15)
-			continue
-	
-		inputBufLock.acquire()
-		curr = inputBuf.popleft()
-		inputBufLock.release()
-
-		prevState = state
-		if curr <= L_MAX:
-			state = -1
-		elif curr > L_MAX and curr <= I_MAX:
-			state = 0
-		elif curr > I_MAX and curr <= R_MAX:
-			state = 1
-
-		# if prevState != state:
-		# 	print state
+curr = 0
 
 def inputRead():
+	global curr, state
 
+	sliding_window = deque()
 
-	# Init Serial
-	ser = serial.Serial('/dev/tty.usbserial-A9WFF5LH', 9600)
-
-	# Write all values into a buffer
 	while not exitFlag:
 		try:
-			time.sleep(0.2)
-			inputBufLock.acquire()
-			distance = ser.readline().rstrip('\r\n')
-			inputBuf.append(int(distance))
-		except KeyboardInterrupt:
-			break
-		finally:
-			if inputBufLock.locked():
-				inputBufLock.release()
+			# CURRENT POSITION
+			line = serialConn.readline().rstrip('\r\n')
+			curr = int(line)
 
+			## SLIDING WINDOW
+			## current value is based on last n
+			if SLIDING:
+				sliding_window.append(curr)
+				if len(sliding_window) >= SLIDING_WINDOW_SIZE:
+					sliding_window.popleft()
+				curr = sum(sliding_window) / len(sliding_window)
+
+			## STEARING
+			## categorize in 3 steering states
+			if STEARING: 
+				if curr <= STEARING_L_MAX:
+					state = -1
+				elif curr > STEARING_L_MAX and curr <= STEARING_I_MAX:
+					state = 0
+				elif curr > STEARING_I_MAX and curr <= STEARING_R_MAX:
+					state = 1
+
+			
+
+		except Exception, e:
+			continue
+
+	serialConn.close()
 
 def main():
-	global exitFlag
+	threadRead.start()
 
-	t1 = threading.Thread(target = inputRead)
-	t1.start()
+# Init Threads
+threadRead = threading.Thread(target = inputRead)
+exitFlag = 0 # Exit main
 
-	t2 = threading.Thread(target = inputLogic)
-	t2.start()
-
-
-
-	# t1.join()
-
-	# # Close serial 
-	# ser.close()
-	# print "Bye bye..."
+# Init Serial Connections
+serialConn = serial.Serial('/dev/tty.usbserial-A9WFF5LH', 9600)
 
 if __name__ == '__main__':
 	main()
+	try:
+		while True:
+			time.sleep(0.2)
+	except KeyboardInterrupt:
+		exitFlag = 1
+		threadRead.join()
+		print "Ciao..."
