@@ -7,21 +7,9 @@ import input2 as inp
 from curses import wrapper
 
 STD_SPEED = 5
-
-
 time = 0
 
-obstacle1 = [
-         '''/O0O\ ''',
-        '''/     \ ''',
-        '''\_____/ '''
-    ]
-
-spaceShipSigns = [
-         '''/T\ ''',
-        '''/ _ \ ''',
-        '''TT TT '''
-    ]
+gameStatus = {}
 
 def getFromFile(fileName):
     f = open("./objects/" + fileName + ".txt", 'r')
@@ -33,38 +21,36 @@ def getFromFile(fileName):
     return signsArray
 
 
-class Object:
+class Object(object):
     objects = []
     def __init__(self, coords = None, signs = getFromFile("stone"), speed = None, randomX = False):
         self.coords = coords
         self.signs  = signs
 
         if speed is None:
-            self.speed = random.randint(STD_SPEED - 2, STD_SPEED + 2)
+            self.speed = random.randint(STD_SPEED - 3, STD_SPEED + 3)
 
         Object.objects.append(self)
 
         self.info = {}
-        self.info['maxHeight'] = len(signs)
-        self.info['maxWidth'] = 0
-
-
-        self.info['rHeight'] = (len(signs) - 1)/2
-
-        self.info['widths'] = []
+        self.info['maxHeight']  = len(signs)
+        self.info['maxWidth']   = 0
+        self.info['rHeight']    = (len(signs) - 1)/2
+        self.info['widths']     = []
 
         for line in signs:
             self.info['widths'].append(len(line))
 
-        self.info['maxWidth'] = max(self.info['widths'])
-        self.info['rWidth']  = (self.info['maxWidth'] - 1)/2
+        self.info['maxWidth']   = max(self.info['widths'])
+        self.info['rWidth']     = (self.info['maxWidth'] - 1)/2
 
         if randomX:
             self.setRandomXPos()
 
+
     def setRandomXPos(self, y = None):
         if y is None:
-            y = -time/self.speed
+            y = -time/self.speed - 10
         x = random.randint(2 + self.info['rWidth'], fieldSize[0] - 2 - self.info['rWidth'])
         self.coords = (x, y)
 
@@ -87,8 +73,11 @@ class Object:
 
         if len(set(self.getPosArray()).intersection(spaceShip.getPosArray())) > 0:
             Object.objects.remove(self)
-            points += 1
+            self.collision()
 
+
+    def collision():
+        pass
 
 
     def getMapCoords(self):
@@ -97,13 +86,36 @@ class Object:
 
     def draw(self):
         x, y = self.getMapCoords()
-        if y < 0:
-            return
 
         for i, line in enumerate(self.signs):
             py = y - (len(self.signs) - 1)/2 + i
-            if py <= fieldSize[1]:
+            if py <= fieldSize[1] and py >= 0:
                 addSign((x - (len(line) - 1)/2, py), line, True)
+
+
+class Obstacle(Object):
+    obstacles = ['stone', 'bigStone']
+    def collision(self):
+        gameStatus['lifes'] = gameStatus['lifes'] - 1
+        if gameStatus['lifes'] == 0:
+            endGame()
+
+    def __init__(self, **args):
+        if "signs" not in args:
+            i = random.randint(0, len(Obstacle.obstacles) - 1)
+            args["signs"] = getFromFile(Obstacle.obstacles[i])
+        super(Obstacle, self).__init__(**args)
+
+
+
+class Goody(Object):
+    def collision(self):
+        gameStatus['points'] = gameStatus['points'] + 5
+
+    def __init__(self, **args):
+        if "signs" not in args:
+            args["signs"] = getFromFile("vodka")
+        super(Goody, self).__init__(**args)
 
 
 class SpaceShip(Object):
@@ -169,23 +181,36 @@ def init():
 
 
 
+spaceShip = None
 
+def endGame():
+    spaceShip = None
 
-spaceShip = SpaceShip(signs = getFromFile("spaceShip"))
+    screen.clear()
+    printField()
+    printStatus()
 
-spaceShip.coords = (0, 0)
-#print spaceShip.getPosArray()
-#exit()
+    screen.nodelay(0)
+
+    c = screen.getch()
+
+    if c == ord('r'):
+        initGame()
+    else:
+        exit()
 
 def initGame():
-    global time
-
+    global time, spaceShip
+    screen.nodelay(1)
+    Object.objects = []
+    spaceShip = SpaceShip(signs = getFromFile("spaceShip"))
     time = 0
     spaceShip.coords = (fieldSize[0]/2, fieldSize[1] - 2)
+    gameStatus['points'] = 0
+    gameStatus['lifes']  = 3
 
 
 moveStepSize = 3
-points = 0
 
 
 
@@ -197,7 +222,8 @@ def printStatus():
     addSign((x, 4), "dir:     " + str(inp.state))
 
     addSign((x, 6), "Game:")
-    addSign((x, 7), "points:  " + str(points))
+    addSign((x, 7), "points:  " + str(gameStatus['points']))
+    addSign((x, 8), "lifes:   " + str(gameStatus['lifes']))
     addSign((x, 9), "time:    " + str(time))
     addSign((x,10), "objects: " + str(len(Object.objects)))
 
@@ -246,6 +272,7 @@ def main(s):
 
         screen.clear()
         printField()
+        printStatus()
 
         for o in list(Object.objects):
             o.check()
@@ -254,10 +281,12 @@ def main(s):
             o.draw()
 
         #printSpaceShip()
-        printStatus()
+
         timeLib.sleep(.02)
-        if time%40 == 0:
-            Object(randomX = True)
+        if time%100 == 0:
+            Goody(randomX = True)
+        if time%50 == 0:
+            Obstacle(randomX = True)
         time += 1
 
     inp.exitFlag = 1
