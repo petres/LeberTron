@@ -3,13 +3,14 @@ import serial, sys, traceback
 import time as timeLib
 import curses
 import random
-import input as inp
+#import input as inp
 from curses import wrapper
 
 STD_SPEED = 5
 time = 0
 
 gameStatus = {}
+gameStatus['goodies'] = []
 
 def getFromFile(fileName):
     f = open("./objects/" + fileName + ".txt", 'r')
@@ -118,6 +119,8 @@ class Obstacle(Object):
 class Goody(Object):
     def collision(self):
         gameStatus['points'] = gameStatus['points'] + 5
+        gameStatus['goodies'].append(self)
+
 
     def __init__(self, **args):
         if "signs" not in args:
@@ -226,12 +229,46 @@ def initGame():
 moveStepSize = 3
 
 
+def printGlass(x, y, goodies):
+
+    top    = ["Your drink...",
+              "                 .---,",
+              "                / .--`",
+              "               / /",
+              "              / / ",
+              " _..--`````--/ / ",
+              "/           / / \\",
+              "|:--.._____;;--:|"]
+
+    bottom = ["||             ||", 
+              "|'.__||   ||__.'|", 
+              "\     `---'     /", 
+              " `-...........-'"]
+
+
+    body    = []
+    h = max(6, len(goodies))
+    for i in range(h,  -1, -1):
+        if i > len(goodies) or len(goodies) == 0:
+            body.append("||             ||")
+
+        elif i == len(goodies):
+            body.append("|:--.._____..--:|")
+
+        elif i < len(goodies):
+            body.append("||" + goodies[i].center(13, " ") + "||")
+
+    glass = top+body+bottom
+    for l in glass:
+        y += 1
+        addSign((x, y), l)
+
 
 def printStatus():
     x, y = statusPos
     addSign((x, 1), "Sensor:")
-    addSign((x, 2), "cm:      " + str(inp.curr))
-    addSign((x, 4), "dir:     " + str(inp.state))
+    #addSign((x, 2), "cm:      " + str(inp.curr))
+    #addSign((x, 4), "dir:     " + str(inp.state))
 
     addSign((x, 6), "Game:")
     addSign((x, 7), "points:  " + str(gameStatus['points']))
@@ -239,7 +276,10 @@ def printStatus():
     addSign((x, 9), "time:    " + str(time))
     addSign((x,10), "objects: " + str(len(Object.objects)))
 
+    # Change list creation :)
+    goodies = [goody.signs[0] for goody in gameStatus["goodies"]]
 
+    printGlass(x, 12, goodies)
 
 
 #def printSpaceShip():
@@ -255,7 +295,7 @@ def main(s):
     global screen, spaceShipPos, time
     screen = s
 
-    inp.main()
+    #inp.main()
 
     init()
 
@@ -266,10 +306,10 @@ def main(s):
         x = spaceShip.coords[0]
         if c == ord('q'):
             break  # Exit the while loop
-        elif c == curses.KEY_LEFT or inp.state == -1:
+        elif c == curses.KEY_LEFT:# or inp.state == -1:
             if (x - moveStepSize - spaceShip.info['maxWidth']/2) > 0:
                 x -= moveStepSize
-        elif c == curses.KEY_RIGHT or inp.state == 1:
+        elif c == curses.KEY_RIGHT:# or inp.state == 1:
             if (x + moveStepSize + spaceShip.info['maxWidth']/2) < fieldSize[0]:
                 x += moveStepSize
 
@@ -301,7 +341,7 @@ def main(s):
             Obstacle(randomX = True)
         time += 1
 
-    inp.exitFlag = 1
+    #inp.exitFlag = 1
     screen.refresh()
 
 wrapper(main)
