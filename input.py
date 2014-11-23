@@ -41,7 +41,7 @@ def inputRead():
 
 			## STEARING
 			## categorize in 3 steering states
-			if STEARING: 
+			if STEARING:
 				if curr <= STEARING_L_MAX:
 					state = -1
 				elif curr > STEARING_L_MAX and curr <= STEARING_I_MAX:
@@ -49,14 +49,14 @@ def inputRead():
 				elif curr > STEARING_I_MAX and curr <= STEARING_R_MAX:
 					state = 1
 
-			
+
 
 		except Exception, e:
 			continue
 
 	serialConn.close()
 
-def main():
+def start():
 	threadRead.start()
 
 # Init Threads
@@ -64,10 +64,15 @@ threadRead = threading.Thread(target = inputRead)
 exitFlag = 0 # Exit main
 
 # Init Serial Connections
-serialConn = serial.Serial('/dev/tty.usbserial-A9WFF5LH', 9600)
+serialConn = None
+
+#serialConn = serial.Serial('/dev/tty.usbserial-A9WFF5LH', 9600)
+def connect(serialPort = '/dev/ttyACM0'):
+	global serialConn
+	serialConn = serial.Serial(serialPort, 9600)
 
 if __name__ == '__main__':
-	main()
+	start()
 	try:
 		while True:
 			time.sleep(0.2)
