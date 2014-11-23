@@ -6,13 +6,13 @@ import random
 import input as inp
 from curses import wrapper
 
-
+import codecs
 ################################################################################
 # HELPER FUNCTIONS
 ################################################################################
 
 def getFromFile(fileName):
-    f = open("./objects/" + fileName + ".txt", 'r')
+    f = codecs.open("./objects/" + fileName + ".txt", 'r', "utf-8")
     content = f.read()
     signsArray = []
     for line in content.split("\n"):
@@ -40,9 +40,9 @@ class Object(object):
 
         self.info = {}
         self.info['maxHeight']  = len(signs)
-        self.info['maxWidth']   = 0
         self.info['rHeight']    = (len(signs) - 1)/2
-        self.info['widths']     = []
+
+        self.info['widths']  = []
 
         for line in signs:
             self.info['widths'].append(len(line))
@@ -62,15 +62,20 @@ class Object(object):
     def getPosArray(self):
         posArray = []
         x, y = self.getMapCoords()
-        for i, width in enumerate(self.info["widths"]):
-            for j in range(width):
-                posArray.append((x - (width - 1)/2 + j, y - self.info["rHeight"] + i))
+        #for i, width in enumerate(self.info["widths"]):
+        #    for j in range(width):
+        #        posArray.append((x - (width - 1)/2 + j, y - self.info["rHeight"] + i))
+        for i, line in enumerate(self.signs):
+            py = y - self.info['rHeight'] + i
+            for j, sign in enumerate(line):
+                if sign != " ":
+                    px = x - self.info['rWidth'] + j
+                    posArray.append((px, py))
+
         return posArray
 
 
     def check(self):
-
-
         if len(set(self.getPosArray()).intersection(self.game.spaceShip.getPosArray())) > 0:
             Object.objects.remove(self)
             self.collision()
@@ -91,14 +96,20 @@ class Object(object):
             return
 
         for i, line in enumerate(self.signs):
-            py = y - (len(self.signs) - 1)/2 + i
+            py = y - self.info['rHeight'] + i
             if py <= output.fieldSize[1] and py >= 0:
-                output.addSign((x - (len(line) - 1)/2, py), line, field = True, color = self.color)
+                for j, sign in enumerate(line):
+                    if sign != " ":
+                        px = x - self.info['rWidth'] + j
+                        output.addSign((px, py), sign, field = True, color = self.color)
+            #py = y - (len(self.signs) - 1)/2 + i
+            #if py <= output.fieldSize[1] and py >= 0:
+            #    output.addSign((x - (len(line) - 1)/2, py), line, field = True, color = self.color)
 
 
 
 class Obstacle(Object):
-    obstacles = ['stone', 'bigStone']
+    obstacles = ['spaceInvador', 'bigStone', 'stone']
 
     def collision(self):
         self.game.lifeLost()
