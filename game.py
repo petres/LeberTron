@@ -1,4 +1,5 @@
 #!/usr/bin/python2
+# -*- coding: utf-8 -*-
 import serial, sys, traceback
 import time as timeLib
 import curses
@@ -7,20 +8,33 @@ import input as inp
 from curses import wrapper
 
 import codecs
+
+import locale
+locale.setlocale(locale.LC_ALL, "")
+
 ################################################################################
 # HELPER FUNCTIONS
 ################################################################################
 
 def getFromFile(fileName):
-    f = codecs.open("./objects/" + fileName + ".txt", 'r', "utf-8")
-    content = f.read()
+    #f = codecs.open("./objects/" + fileName + ".txt", 'r', "utf-8")
+    f = open("./objects/" + fileName + ".txt", 'r')
+    content = f.read().decode('utf-8')
     signsArray = []
     for line in content.split("\n"):
         signsArray.append(line)
     return signsArray
 
-
-################################################################################
+# signs = getFromFile("spaceInvadors/1")
+#
+# print signs
+#
+# for i, line in enumerate(signs):
+#     for j, sign in enumerate(line):
+#         print sign
+#
+# exit()
+# ################################################################################
 # OBJECT CLASS AND CHILDS
 ################################################################################
 
@@ -109,7 +123,9 @@ class Object(object):
 
 
 class Obstacle(Object):
-    obstacles = ['spaceInvador', 'bigStone', 'stone']
+    #obstacles = ['spaceInvador', 'bigStone', 'stone']
+    obstacles = ['spaceInvadors/1', 'spaceInvadors/2', 'spaceInvadors/3',
+                    'spaceInvadors/4', 'spaceInvadors/5']
 
     def collision(self):
         self.game.lifeLost()
@@ -190,12 +206,12 @@ class Output(object):
 
     def printField(self):
         for i in range(self.fieldPos[0] - 1, self.fieldPos[0] + self.fieldSize[0] + 2):
-            self.addSign((i, self.fieldPos[1] - 1), "X", color = None)
-            self.addSign((i, self.fieldPos[1] + self.fieldSize[1] + 1), "X", color = None)
+            self.addSign((i, self.fieldPos[1] - 1), u"█")
+            self.addSign((i, self.fieldPos[1] + self.fieldSize[1] + 1), u"█")
 
         for i in range(self.fieldPos[1] - 1, self.fieldPos[1] + self.fieldSize[1] + 2):
-            self.addSign((self.fieldPos[0] - 1, i), "X", color = None)
-            self.addSign((self.fieldPos[0] + self.fieldSize[0] + 1, i), "X", color = None)
+            self.addSign((self.fieldPos[0] - 1, i), u"█", color = None)
+            self.addSign((self.fieldPos[0] + self.fieldSize[0] + 1, i), u"█")
 
     def printStatus(self, game):
         x, y = self.statusPos
@@ -244,9 +260,9 @@ class Output(object):
             y += self.fieldPos[1]
         try:
             if color:
-                screen.addstr(y, x, sign, curses.color_pair(color))
+                screen.addstr(y, x, sign.encode('utf_8'), curses.color_pair(color))
             else:
-                screen.addstr(y, x, sign)
+                screen.addstr(y, x, sign.encode('utf_8'))
         except Exception as e:
             print >> sys.stderr, "terminalSize:", screen.getmaxyx()
             print >> sys.stderr, "fieldPos:", self.fieldPos
@@ -265,11 +281,9 @@ class Output(object):
 class Controller(object):
     LEFT    = -1
     RIGHT   =  1
-    def getDirection(self):
-        raise NotImplementedError
-    def getPosition(self):
-        raise NotImplementedError
-    def getSpecial(self):
+    QUIT    = 10
+    RETRY   = 11
+    def getInput(self):
         raise NotImplementedError
 
 
@@ -279,15 +293,15 @@ class UltraSonicController(object):
         inp.connect(serialPort)
         inp.start()
 
-    def getDirection(self):
+    def getInput(self):
         if inp.state == -1:
             return Controller.LEFT
         elif inp.state == 1:
             return Controller.RIGHT
         return None
 
-    def getPosition(self):
-        float(inp.curr - self.distPos[0])/(self.distPos[1] - self.distPos[0])
+    # def getPosition(self):
+    #     float(inp.curr - self.distPos[0])/(self.distPos[1] - self.distPos[0])
 
 
 
@@ -296,23 +310,24 @@ class KeyboardController(object):
         self.screen = screen
         self.screen.nodelay(1)
 
-    def getDirection(self):
+    def getInput(self):
         c = self.screen.getch()
+
         if c == curses.KEY_LEFT:
             return Controller.LEFT
         elif c == curses.KEY_RIGHT:
             return Controller.RIGHT
+        elif c == ord('q'):
+            return Controller.QUIT
+        elif c == ord('r'):
+            return Controller.RETRY
+        # try:
+        #     value = int(c)
+        #     return float(value - 1)/8
+        # except ValueError:
+
+
         return None
-
-    def getPosition(self):
-        # NUMBERS 1 - 9
-        c = self.screen.getch()
-        try:
-            value = int(c)
-        except ValueError:
-            return None
-
-        return float(value - 1)/8
 
 
 ################################################################################
@@ -345,12 +360,14 @@ class Game(object):
 
     def run(self):
         while True:
-            d = self.controller.getDirection()
+            d = self.controller.getInput()
             m = 0
             if d == Controller.LEFT:
                 m = -1
             elif d == Controller.RIGHT:
                 m = 1
+            elif d == Controller.QUIT:
+                break
 
             x = self.spaceShip.coords[0]
             x += m*self.moveStepSize
@@ -416,7 +433,8 @@ def main(s):
     g.prepare()
     g.run()
 
-    #inp.exitFlag = 1
-    #screen.refresh()
+    inp.exitFlag = 1
+    timeLib.sleep(1)
+    screen.refresh()
 
 wrapper(main)
