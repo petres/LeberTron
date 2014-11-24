@@ -12,6 +12,10 @@ import codecs
 import locale
 locale.setlocale(locale.LC_ALL, "")
 
+inp.connect()
+inp.start()
+timeLib.sleep(5)
+exit(0)
 ################################################################################
 # HELPER FUNCTIONS
 ################################################################################
@@ -426,8 +430,9 @@ def main(s):
 
     o = Output()
 
-    #c = UltrasonicController("/dev/ttyACM0")
-    c = KeyboardController(screen)
+    c = UltraSonicController('/dev/tty.usbserial-A9WFF5LH')
+    # c = UltraSonicController("/dev/ttyACM0")
+    #c = KeyboardController(screen)
 
     g = Game(c, o)
     g.prepare()

@@ -9,7 +9,7 @@ assess different states
 """
 
 
-SLIDING = True
+SLIDING = False
 SLIDING_WINDOW_SIZE = 20
 
 STEARING = True
@@ -19,14 +19,17 @@ STEARING_R_MAX = 60
 
 state = 0
 curr = 0
+shoot = False
 
 def inputRead():
 	global curr, state
 
 	sliding_window = deque()
 
+	prevState = 0
 	while not exitFlag:
 		try:
+
 			# CURRENT POSITION
 			line = serialConn.readline().rstrip('\r\n')
 			curr = int(line)
@@ -44,11 +47,24 @@ def inputRead():
 			if STEARING:
 				if curr <= STEARING_L_MAX:
 					state = -1
+					shoot = False
 				elif curr > STEARING_L_MAX and curr <= STEARING_I_MAX:
 					state = 0
+					shoot = False
 				elif curr > STEARING_I_MAX and curr <= STEARING_R_MAX:
 					state = 1
+					shoot = False
+			# 	elif curr > STEARING_R_MAX:
+			# 		state = 0
+			# 		shoot = True
 
+			# if state != prevState:
+			print state
+
+			# if shoot:
+			# 	print "Shoot!"
+
+			# prevState = state
 
 
 		except Exception, e:
@@ -66,12 +82,13 @@ exitFlag = 0 # Exit main
 # Init Serial Connections
 serialConn = None
 
-#serialConn = serial.Serial('/dev/tty.usbserial-A9WFF5LH', 9600)
-def connect(serialPort = '/dev/ttyACM0'):
+# def connect(serialPort = '/dev/ttyACM0'):
+def connect(serialPort = '/dev/tty.usbserial-A9WFF5LH'):
 	global serialConn
 	serialConn = serial.Serial(serialPort, 9600)
 
 if __name__ == '__main__':
+	connect('/dev/tty.usbserial-A9WFF5LH')
 	start()
 	try:
 		while True:
