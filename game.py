@@ -12,10 +12,7 @@ import codecs
 import locale
 locale.setlocale(locale.LC_ALL, "")
 
-inp.connect()
-inp.start()
-timeLib.sleep(5)
-exit(0)
+screen = None
 ################################################################################
 # HELPER FUNCTIONS
 ################################################################################
@@ -220,8 +217,8 @@ class Output(object):
     def printStatus(self, game):
         x, y = self.statusPos
         self.addSign((x, 1), "Sensor:")
-        #addSign((x, 2), "cm:      " + str(inp.curr))
-        #addSign((x, 4), "dir:     " + str(inp.state))
+        self.addSign((x, 2), "cm:      " + str(round(inp.curr)))
+        self.addSign((x, 4), "dir:     " + str(inp.state))
 
         self.addSign((x, 6), "Game:")
         self.addSign((x, 7), "points:  " + str(game.status['points']))
@@ -285,34 +282,51 @@ class Output(object):
 class Controller(object):
     LEFT    = -1
     RIGHT   =  1
-    QUIT    = 10
+    QUIT    = -10
     RETRY   = 11
+
+    def __init__(self, screen, position):
+        self.screen = screen
+        self.position = position
+
     def getInput(self):
-        raise NotImplementedError
+        #raise NotImplementedError
+        c = self.screen.getch()
+        return None
 
 
-class UltraSonicController(object):
-    def __init__(self, serialPort):
-        self.distPos    = (15, 50)
+class UltraSonicController(Controller):
+    def __init__(self, serialPort, screen, position = False):
+        self.distPos    = (10, 60)
         inp.connect(serialPort)
         inp.start()
+        super(UltraSonicController, self).__init__(screen, position)
 
     def getInput(self):
+        c = self.screen.getch()
+
+        if c == ord('q'):
+            return Controller.QUIT
+
+        if self.position:
+            return float(inp.curr - self.distPos[0])/(self.distPos[1] - self.distPos[0])
+
+
         if inp.state == -1:
             return Controller.LEFT
         elif inp.state == 1:
             return Controller.RIGHT
         return None
 
+
     # def getPosition(self):
     #     float(inp.curr - self.distPos[0])/(self.distPos[1] - self.distPos[0])
 
 
 
-class KeyboardController(object):
-    def __init__(self, screen):
-        self.screen = screen
-        self.screen.nodelay(1)
+class KeyboardController(Controller):
+    def __init__(self, screen, position):
+        super(KeyboardController, self).__init__(screen, position)
 
     def getInput(self):
         c = self.screen.getch()
@@ -365,22 +379,27 @@ class Game(object):
     def run(self):
         while True:
             d = self.controller.getInput()
-            m = 0
-            if d == Controller.LEFT:
-                m = -1
-            elif d == Controller.RIGHT:
-                m = 1
-            elif d == Controller.QUIT:
+
+            if d == Controller.QUIT:
                 break
 
-            x = self.spaceShip.coords[0]
-            x += m*self.moveStepSize
+            if self.controller.position == False:
+                m = 0
+                if d == Controller.LEFT:
+                    m = -1
+                elif d == Controller.RIGHT:
+                    m = 1
+
+                x = self.spaceShip.coords[0]
+                x += m * self.moveStepSize
+            else:
+                x = int(d*self.output.fieldSize[0])
 
             # CHECK MARGINS
             if x > self.output.fieldSize[0] - self.spaceShip.info['maxWidth']:
-                x = self.output.fieldSize[0] - self.spaceShip.info['maxWidth']
+                x = self.output.fieldSize[0] - self.spaceShip.info['maxWidth'] - 1
             elif x < self.spaceShip.info['maxWidth']:
-                x = self.spaceShip.info['maxWidth']
+                x = self.spaceShip.info['maxWidth'] + 1
 
             self.spaceShip.coords = (x, self.spaceShip.coords[1])
 
@@ -389,13 +408,14 @@ class Game(object):
 
             self.output.printGame(self)
 
-            timeLib.sleep(.03)
             if self.time%100 == 0:
                 g = Goody(self)
                 g.setRandomXPos(self.output)
             if self.time%50 == 0:
                 o = Obstacle(self)
                 o.setRandomXPos(self.output)
+
+            timeLib.sleep(.05)
 
             self.time += 1
 
@@ -404,12 +424,11 @@ class Game(object):
         self.spaceShip = None
         screen.clear()
         self.output.printField()
-        self.output.printStatus()
         screen.nodelay(0)
         c = screen.getch()
 
         if c == ord('r'):
-            self.init()
+            self.prepare()
         else:
             exit()
 
@@ -424,15 +443,20 @@ class Game(object):
             self.removeObjectsAndCreateSpaceship()
 
 
-def main(s):
+
+
+def main(s = None):
     global screen
     screen = s
+    screen.nodelay(1)
 
     o = Output()
 
-    c = UltraSonicController('/dev/tty.usbserial-A9WFF5LH')
-    # c = UltraSonicController("/dev/ttyACM0")
+    #c = UltraSonicController('/dev/tty.usbserial-A9WFF5LH')
+    c = UltraSonicController("/dev/ttyACM0", screen, position = True)
+    #c = Controller(screen)
     #c = KeyboardController(screen)
+
 
     g = Game(c, o)
     g.prepare()
@@ -441,5 +465,5 @@ def main(s):
     inp.exitFlag = 1
     timeLib.sleep(1)
     screen.refresh()
-
+#main()
 wrapper(main)

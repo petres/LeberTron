@@ -9,8 +9,8 @@ assess different states
 """
 
 
-SLIDING = False
-SLIDING_WINDOW_SIZE = 20
+SLIDING = True
+SLIDING_WINDOW_SIZE = 8
 
 STEARING = True
 STEARING_L_MAX = 20
@@ -88,7 +88,7 @@ def connect(serialPort = '/dev/tty.usbserial-A9WFF5LH'):
 	serialConn = serial.Serial(serialPort, 9600)
 
 if __name__ == '__main__':
-	connect('/dev/tty.usbserial-A9WFF5LH')
+	connect(serialPort = '/dev/ttyACM0')
 	start()
 	try:
 		while True:
