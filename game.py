@@ -1,15 +1,16 @@
 #!/usr/bin/python2
 # -*- coding: utf-8 -*-
 import serial, sys, traceback
-import time as timeLib
-import curses
-import random
+import curses, locale
+import random, os, glob
 import input as inp
-from curses import wrapper
+import time as timeLib
+from ConfigParser import SafeConfigParser
 
-import codecs
+abspath = os.path.abspath(__file__)
+dname = os.path.dirname(abspath)
+os.chdir(dname)
 
-import locale
 locale.setlocale(locale.LC_ALL, "")
 
 screen = None
@@ -19,7 +20,7 @@ screen = None
 
 def getFromFile(fileName):
     #f = codecs.open("./objects/" + fileName + ".txt", 'r', "utf-8")
-    f = open("./objects/" + fileName + ".txt", 'r')
+    f = open(fileName, 'r')
     content = f.read().decode('utf-8')
     signsArray = []
     for line in content.split("\n"):
@@ -42,7 +43,7 @@ def getFromFile(fileName):
 class Object(object):
     objects = []
     stdSpeed = 2
-    def __init__(self, game, coords = None, signs = getFromFile("stone"), speed = None, color = None):
+    def __init__(self, game, coords = None, signs = getFromFile("./objects/stone.txt"), speed = None, color = None):
         self.game   = game
         self.coords = coords
         self.signs  = signs
@@ -124,10 +125,8 @@ class Object(object):
 
 
 class Obstacle(Object):
-    #obstacles = ['spaceInvador', 'bigStone', 'stone']
-    obstacles = ['spaceInvadors/1', 'spaceInvadors/2', 'spaceInvadors/3',
-                    'spaceInvadors/4', 'spaceInvadors/5']
-
+    obstacles   = []
+    color       = 0
     def collision(self):
         self.game.lifeLost()
 
@@ -135,26 +134,40 @@ class Obstacle(Object):
         if "signs" not in args:
             i = random.randint(0, len(Obstacle.obstacles) - 1)
             args["signs"] = getFromFile(Obstacle.obstacles[i])
+            args["color"] = Obstacle.color
         super(Obstacle, self).__init__(game, **args)
 
 
 
 class Goody(Object):
+    types = []
+
     def collision(self):
         self.game.status['points'] = self.game.status['points'] + 5
         self.game.status['goodies'].append(self)
 
-
     def __init__(self, game, **args):
         if "signs" not in args:
-            args["signs"] = getFromFile("vodka")
-            args["color"] = 2
+            i = random.randint(0, len(Goody.types) - 1)
+            args["signs"] = getFromFile(Goody.types[i]["design"])
+            args["color"] = Goody.types[i]["color"]
+            self.name = Goody.types[i]["name"]
+            self.ouptut = i
         super(Goody, self).__init__(game, **args)
 
 
 class SpaceShip(Object):
+    design  = getFromFile("./objects/spaceShip.txt")
+    color   = None
+    def __init__(self, game, **args):
+        if "signs" not in args:
+            args["signs"] = getFromFile(self.design)
+            args["color"] = self.color
+        super(SpaceShip, self).__init__(game, **args)
+
     def getMapCoords(self):
         return (self.coords[0], self.coords[1])
+
     def check(self):
         return
 
@@ -233,8 +246,8 @@ class Output(object):
 
 
     def printGlass(self, x, y, goodies):
-        top    = getFromFile("glass/top")
-        bottom = getFromFile("glass/bottom")
+        top    = getFromFile("./objects/glass/top.txt")
+        bottom = getFromFile("./objects/glass/bottom.txt")
 
         body    = []
         h = max(6, len(goodies))
@@ -372,7 +385,7 @@ class Game(object):
 
     def removeObjectsAndCreateSpaceship(self):
         Object.objects = []
-        self.spaceShip = SpaceShip(self, signs = getFromFile("spaceShip"), color = 3)
+        self.spaceShip = SpaceShip(self)
         self.spaceShip.coords = (self.output.fieldSize[0]/2, self.output.fieldSize[1] - 2)
 
 
@@ -396,10 +409,10 @@ class Game(object):
                 x = int(d*self.output.fieldSize[0])
 
             # CHECK MARGINS
-            if x > self.output.fieldSize[0] - self.spaceShip.info['maxWidth']:
-                x = self.output.fieldSize[0] - self.spaceShip.info['maxWidth'] - 1
-            elif x < self.spaceShip.info['maxWidth']:
-                x = self.spaceShip.info['maxWidth'] + 1
+            if x > self.output.fieldSize[0] - self.spaceShip.info['rWidth'] - 1:
+                x = self.output.fieldSize[0] - self.spaceShip.info['rWidth'] - 1
+            elif x < self.spaceShip.info['rWidth'] + 1:
+                x = self.spaceShip.info['rWidth'] + 1
 
             self.spaceShip.coords = (x, self.spaceShip.coords[1])
 
@@ -450,20 +463,43 @@ def main(s = None):
     screen = s
     screen.nodelay(1)
 
+
+    config = SafeConfigParser()
+    config.read('./config.cfg')
+
+    # Set obstacles files
+    folder = os.path.join(config.get('Obstacles', 'folder'), "")
+    for obstacleDesign in glob.glob(folder + "*.txt"):
+        Obstacle.obstacles.append(obstacleDesign)
+
+    Obstacle.color     = config.getint('Obstacles', 'color')
+
+    SpaceShip.color     = config.getint('SpaceShip', 'color')
+    SpaceShip.design    = config.get('SpaceShip', 'file')
+
+    Goody.types.append({
+            "color":    3,
+            "design":     'objects/vodka.txt',
+            "name":     'Vodka'
+    })
+
+    # Create Controller
+    position = False
+    if config.get('Controller', 'type') == "keyboard":
+        c = KeyboardController(screen, position)
+    else:
+        position = config.getboolean('UltraSonic', 'position')
+        c = UltraSonicController(config.get('UltraSonic', 'serialPort'), screen, position)
+
     o = Output()
-
-    #c = UltraSonicController('/dev/tty.usbserial-A9WFF5LH')
-    c = UltraSonicController("/dev/ttyACM0", screen, position = True)
-    #c = Controller(screen)
-    #c = KeyboardController(screen)
-
 
     g = Game(c, o)
     g.prepare()
     g.run()
 
     inp.exitFlag = 1
-    timeLib.sleep(1)
+    timeLib.sleep(0.3)
     screen.refresh()
+
 #main()
-wrapper(main)
+curses.wrapper(main)
