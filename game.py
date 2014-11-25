@@ -1,6 +1,6 @@
 #!/usr/bin/python2
 # -*- coding: utf-8 -*-
-import serial, sys, traceback
+import sys, traceback
 import curses, locale
 import random, os, glob
 import time as timeLib
@@ -509,7 +509,7 @@ def main(s = None):
         inp.exitFlag = 1
     except NameError:
         pass
-        
+
     timeLib.sleep(0.3)
     screen.refresh()
 
