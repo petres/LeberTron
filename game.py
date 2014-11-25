@@ -143,7 +143,7 @@ class Goody(Object):
 
     def collision(self):
         self.game.status['points'] = self.game.status['points'] + 5
-        self.game.status['goodies'].append(self)
+        self.game.status['goodies'].append(self.name)
 
     def __init__(self, game, **args):
         if "signs" not in args:
@@ -241,10 +241,8 @@ class Output(object):
         self.addSign((x, 9), "time:    " + str(game.time))
         self.addSign((x,10), "objects: " + str(len(Object.objects)))
 
-        # Change list creation :)
-        goodies = [goody.signs[0] for goody in game.status["goodies"]]
 
-        self.printGlass(x, 12, goodies)
+        self.printGlass(x, 12, game.status["goodies"])
 
 
     def printGlass(self, x, y, goodies):
@@ -487,7 +485,7 @@ def main(s = None):
         Goody.types.append({
                 "color":    designConfig.getint(sectionName, 'color'),
                 "design":   os.path.join(ingredientsFolder, designConfig.get(sectionName, 'file')),
-                "name":     designConfig.get(sectionName, 'file')
+                "name":     designConfig.get(sectionName, 'name')
         })
 
     # Create Controller
