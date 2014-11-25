@@ -377,11 +377,11 @@ class Game(object):
         self.output = output
 
     def prepare(self):
-        self.time = 0
+        self.time   = 0
         self.status = {}
-        self.status['points'] = 0
-        self.status['goodies'] = []
-        self.status['lifes']  = 3
+        self.status['points']   = 0
+        self.status['goodies']  = []
+        self.status['lifes']    = 3
         self.removeObjectsAndCreateSpaceship()
 
     def removeObjectsAndCreateSpaceship(self):
@@ -422,14 +422,14 @@ class Game(object):
 
             self.output.printGame(self)
 
-            if self.time%100 == 0:
+            if self.time%50 == 0:
                 g = Goody(self)
                 g.setRandomXPos(self.output)
-            if self.time%50 == 0:
+            if self.time%40 == 0:
                 o = Obstacle(self)
                 o.setRandomXPos(self.output)
 
-            timeLib.sleep(.05)
+            timeLib.sleep(.03)
 
             self.time += 1
 
