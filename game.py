@@ -3,7 +3,6 @@
 import serial, sys, traceback
 import curses, locale
 import random, os, glob
-import input as inp
 import time as timeLib
 from ConfigParser import SafeConfigParser
 
@@ -43,7 +42,7 @@ def getFromFile(fileName):
 class Object(object):
     objects = []
     stdSpeed = 2
-    def __init__(self, game, coords = None, signs = getFromFile("./objects/stone.txt"), speed = None, color = None):
+    def __init__(self, game, coords = None, signs = None, speed = None, color = None):
         self.game   = game
         self.coords = coords
         self.signs  = signs
@@ -230,8 +229,11 @@ class Output(object):
     def printStatus(self, game):
         x, y = self.statusPos
         self.addSign((x, 1), "Sensor:")
-        self.addSign((x, 2), "cm:      " + str(round(inp.curr)))
-        self.addSign((x, 4), "dir:     " + str(inp.state))
+        try:
+            self.addSign((x, 2), "cm:      " + str(round(inp.curr)))
+            self.addSign((x, 4), "dir:     " + str(inp.state))
+        except NameError:
+            pass
 
         self.addSign((x, 6), "Game:")
         self.addSign((x, 7), "points:  " + str(game.status['points']))
@@ -310,6 +312,7 @@ class Controller(object):
 
 class UltraSonicController(Controller):
     def __init__(self, serialPort, screen, position = False):
+        import input as inp
         self.distPos    = (10, 60)
         inp.connect(serialPort)
         inp.start()
@@ -464,40 +467,49 @@ def main(s = None):
     screen.nodelay(1)
 
 
-    config = SafeConfigParser()
-    config.read('./config.cfg')
+
+    designConfig = SafeConfigParser()
+    designConfig.read('./design.cfg')
 
     # Set obstacles files
-    folder = os.path.join(config.get('Obstacles', 'folder'), "")
+    folder = os.path.join(designConfig.get('Obstacles', 'folder'), "")
     for obstacleDesign in glob.glob(folder + "*.txt"):
         Obstacle.obstacles.append(obstacleDesign)
 
-    Obstacle.color     = config.getint('Obstacles', 'color')
+    Obstacle.color      = designConfig.getint('Obstacles', 'color')
 
-    SpaceShip.color     = config.getint('SpaceShip', 'color')
-    SpaceShip.design    = config.get('SpaceShip', 'file')
+    SpaceShip.color     = designConfig.getint('SpaceShip', 'color')
+    SpaceShip.design    = designConfig.get('SpaceShip', 'file')
 
-    Goody.types.append({
-            "color":    3,
-            "design":     'objects/vodka.txt',
-            "name":     'Vodka'
-    })
+    ingredientsFolder   = designConfig.get('Ingredients', 'folder')
+    for nrGoody in range(1, designConfig.getint('Ingredients', 'count') + 1):
+        sectionName = 'Ingredient' + str(nrGoody)
+        Goody.types.append({
+                "color":    designConfig.getint(sectionName, 'color'),
+                "design":   os.path.join(ingredientsFolder, designConfig.get(sectionName, 'file')),
+                "name":     designConfig.get(sectionName, 'file')
+        })
 
     # Create Controller
+    controllerConfig = SafeConfigParser()
+    controllerConfig.read('./controller.cfg')
     position = False
-    if config.get('Controller', 'type') == "keyboard":
+    if controllerConfig.get('Controller', 'type') == "keyboard":
         c = KeyboardController(screen, position)
     else:
-        position = config.getboolean('UltraSonic', 'position')
-        c = UltraSonicController(config.get('UltraSonic', 'serialPort'), screen, position)
+        position = controllerConfig.getboolean('UltraSonic', 'position')
+        c = UltraSonicController(controllerConfig.get('UltraSonic', 'serialPort'), screen, position)
 
     o = Output()
 
     g = Game(c, o)
     g.prepare()
     g.run()
-
-    inp.exitFlag = 1
+    try:
+        inp.exitFlag = 1
+    except NameError:
+        pass
+        
     timeLib.sleep(0.3)
     screen.refresh()
 
