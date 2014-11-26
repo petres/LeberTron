@@ -311,6 +311,7 @@ class Controller(object):
 class UltraSonicController(Controller):
     def __init__(self, serialPort, screen, position = False):
         import input as inp
+        self.inp = inp
         self.distPos    = (10, 60)
         inp.connect(serialPort)
         inp.start()
@@ -323,7 +324,7 @@ class UltraSonicController(Controller):
             return Controller.QUIT
 
         if self.position:
-            return float(inp.curr - self.distPos[0])/(self.distPos[1] - self.distPos[0])
+            return float(self.inp.curr - self.distPos[0])/(self.distPos[1] - self.distPos[0])
 
 
         if inp.state == -1:
