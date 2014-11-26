@@ -5,6 +5,7 @@ import curses, locale
 import random, os, glob
 import time as timeLib
 from ConfigParser import SafeConfigParser
+import sound as soundLib
 
 abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
@@ -96,7 +97,7 @@ class Object(object):
             self.collision()
 
 
-    def collision():
+    def collision(self):
         pass
 
 
@@ -126,9 +127,12 @@ class Object(object):
 class Obstacle(Object):
     obstacles   = []
     color       = 0
-    def collision(self):
-        self.game.lifeLost()
+    sound = soundLib.Sound("sounds/krach.wav")
 
+    def collision(self):
+        Obstacle.sound.play()
+        self.game.lifeLost()
+        
     def __init__(self, game, **args):
         if "signs" not in args:
             i = random.randint(0, len(Obstacle.obstacles) - 1)
@@ -140,11 +144,13 @@ class Obstacle(Object):
 
 class Goody(Object):
     types = []
+    sound = soundLib.Sound("sounds/mmmh.wav")
 
     def collision(self):
+        Goody.sound.play()
         self.game.status['points'] = self.game.status['points'] + 5
         self.game.status['goodies'].append(self.name)
-
+        
     def __init__(self, game, **args):
         if "signs" not in args:
             i = random.randint(0, len(Goody.types) - 1)
@@ -372,6 +378,7 @@ class Game(object):
     time        = None
     status      = None
     moveStepSize = 3
+    sound = soundLib.Sound("sounds/theme_sample.wav")
 
     def __init__(self, controller, output):
         self.controller = controller
@@ -384,6 +391,7 @@ class Game(object):
         self.status['goodies']  = []
         self.status['lifes']    = 3
         self.removeObjectsAndCreateSpaceship()
+        Game.sound.loop()
 
     def removeObjectsAndCreateSpaceship(self):
         Object.objects = []
@@ -436,6 +444,7 @@ class Game(object):
 
 
     def end(self):
+        Game.sound.stopLoop()
         self.spaceShip = None
         screen.clear()
         self.output.printField()
@@ -511,6 +520,10 @@ def main(s = None):
 
     timeLib.sleep(0.3)
     screen.refresh()
+
+    Game.sound.close()
+    Goody.sound.close()
+    Obstacle.sound.close()
 
 #main()
 curses.wrapper(main)
