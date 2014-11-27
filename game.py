@@ -27,15 +27,7 @@ def getFromFile(fileName):
         signsArray.append(line)
     return signsArray
 
-# signs = getFromFile("spaceInvadors/1")
-#
-# print signs
-#
-# for i, line in enumerate(signs):
-#     for j, sign in enumerate(line):
-#         print sign
-#
-# exit()
+
 # ################################################################################
 # OBJECT CLASS AND CHILDS
 ################################################################################
