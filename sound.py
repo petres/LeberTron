@@ -1,4 +1,3 @@
-
 import pyaudio
 import wave
 import time
@@ -7,9 +6,8 @@ import threading
 
 class Sound():
 	def __init__(self, path = 'sounds/peng.wav'):
-		self.p = pyaudio.PyAudio()
-		self.wf = wave.open(path, 'rb')
-		self.stream = False
+		self.p 		= pyaudio.PyAudio()
+		self.wf 	= wave.open(path, 'rb')
 		self.stream = self.p.open(format=self.p.get_format_from_width(self.wf.getsampwidth()),
               			  channels=self.wf.getnchannels(),
               			  rate=self.wf.getframerate(),
@@ -20,7 +18,6 @@ class Sound():
 		self.loopExit = False
 
 	def close(self):
-		print "cleaning up"
 		# Stop playing if there is any
 		if self.loopThread:
 			self.stopLoop()
@@ -62,13 +59,14 @@ class Sound():
 		self.loopThread = False
 		self.loopExit = False
 
+
 if __name__ == '__main__':
 
 	theme = Sound("sounds/theme_sample.wav")
 	theme.loop()
 
 	# krach = Sound("sounds/krach.wav")
-	
+
 	try:
 		while True:
 			time.sleep(1)
@@ -93,8 +91,3 @@ if __name__ == '__main__':
 	# s.play()
 	# time.sleep(1)
 	# s.close()
-
-
-
-
-
