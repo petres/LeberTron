@@ -43,6 +43,8 @@ class Object(object):
 
         if speed is None:
             self.speed = random.randint(Object.stdSpeed/2, Object.stdSpeed*2)
+        else:
+            self.speed = speed
 
         Object.objects.append(self)
 
@@ -62,7 +64,7 @@ class Object(object):
 
     def setRandomXPos(self, output, y = None):
         if y is None:
-            y = -self.game.time/self.speed - 10
+            y = -self.game.time/self.speed - 5
         x = random.randint(2 + self.info['rWidth'], output.fieldSize[0] - 2 - self.info['rWidth'])
         self.coords = (x, y)
 
@@ -103,6 +105,10 @@ class Object(object):
             Object.objects.remove(self)
             return
 
+        if y < -10:
+            Object.objects.remove(self)
+            return
+
         for i, line in enumerate(self.signs):
             py = y - self.info['rHeight'] + i
             if py <= output.fieldSize[1] and py >= 0:
@@ -116,15 +122,39 @@ class Object(object):
 
 
 
+class Shoot(Object):
+    soundShooting   = None
+    soundCollision  = None
+    startTime       = None
+    def __init__(self, game, **args):
+        args["signs"] = getFromFile("./objects/shoot.txt")
+        args["color"] = 2
+        args["speed"] = 1
+        self.startTime = game.time
+        Shoot.soundShooting.play()
+        super(Shoot, self).__init__(game, **args)
+
+    def getMapCoords(self):
+        return (self.coords[0], self.coords[1] - (self.game.time - self.startTime)/self.speed)
+
+    def check(self):
+        for o in Object.objects:
+            if isinstance(o, Obstacle):
+                if len(set(self.getPosArray()).intersection(o.getPosArray())) > 0:
+                    Object.objects.remove(o)
+                    Object.objects.remove(self)
+                    Shoot.soundCollision.play()
+                    break
+
+
 class Obstacle(Object):
     obstacles   = []
-    color       = 0
-    sound = soundLib.Sound("sounds/krach.wav")
+    cSpaceship  = None
 
     def collision(self):
-        Obstacle.sound.play()
+        Obstacle.cSpaceship.play()
         self.game.lifeLost()
-        
+
     def __init__(self, game, **args):
         if "signs" not in args:
             i = random.randint(0, len(Obstacle.obstacles) - 1)
@@ -135,14 +165,14 @@ class Obstacle(Object):
 
 
 class Goody(Object):
-    types = []
-    sound = soundLib.Sound("sounds/mmmh.wav")
+    types       = []
+    cSpaceship  = None
 
     def collision(self):
-        Goody.sound.play()
+        Goody.cSpaceship.play()
         self.game.status['points'] = self.game.status['points'] + 5
         self.game.status['goodies'].append(self.name)
-        
+
     def __init__(self, game, **args):
         if "signs" not in args:
             i = random.randint(0, len(Goody.types) - 1)
@@ -206,7 +236,10 @@ class Output(object):
 
 
     def printGame(self, game):
-        screen.clear()
+        #screen.clear()
+
+        for i in range(self.fieldPos[1], self.fieldPos[1] + self.fieldSize[1] + 1):
+            self.addSign((self.fieldPos[0], i), " "*self.fieldSize[0])
 
         self.printField()
         self.printStatus(game)
@@ -224,6 +257,7 @@ class Output(object):
             self.addSign((self.fieldPos[0] - 1, i), u"█", color = None)
             self.addSign((self.fieldPos[0] + self.fieldSize[0] + 1, i), u"█")
 
+
     def printStatus(self, game):
         x, y = self.statusPos
         self.addSign((x, 1), "Sensor:")
@@ -238,7 +272,6 @@ class Output(object):
         self.addSign((x, 8), "lifes:   " + str(game.status['lifes']))
         self.addSign((x, 9), "time:    " + str(game.time))
         self.addSign((x,10), "objects: " + str(len(Object.objects)))
-
 
         self.printGlass(x, 12, game.status["goodies"])
 
@@ -294,7 +327,8 @@ class Controller(object):
     LEFT    = -1
     RIGHT   =  1
     QUIT    = -10
-    RETRY   = 11
+    RETRY   = -11
+    SHOOT   = -12
 
     def __init__(self, screen, position):
         self.screen = screen
@@ -352,6 +386,8 @@ class KeyboardController(Controller):
             return Controller.QUIT
         elif c == ord('r'):
             return Controller.RETRY
+        elif c == ord(' '):
+            return Controller.SHOOT
         # try:
         #     value = int(c)
         #     return float(value - 1)/8
@@ -370,7 +406,7 @@ class Game(object):
     time        = None
     status      = None
     moveStepSize = 3
-    sound = soundLib.Sound("sounds/theme_sample.wav")
+    background  = None
 
     def __init__(self, controller, output):
         self.controller = controller
@@ -383,7 +419,7 @@ class Game(object):
         self.status['goodies']  = []
         self.status['lifes']    = 3
         self.removeObjectsAndCreateSpaceship()
-        Game.sound.loop()
+        Game.background.loop()
 
     def removeObjectsAndCreateSpaceship(self):
         Object.objects = []
@@ -397,6 +433,8 @@ class Game(object):
 
             if d == Controller.QUIT:
                 break
+            elif d == Controller.SHOOT:
+                o = Shoot(self, coords = (self.spaceShip.coords[0], self.spaceShip.coords[1] - self.spaceShip.info['rHeight']))
 
             if self.controller.position == False:
                 m = 0
@@ -430,25 +468,25 @@ class Game(object):
                 o = Obstacle(self)
                 o.setRandomXPos(self.output)
 
-            timeLib.sleep(.03)
+            timeLib.sleep(.02)
 
             self.time += 1
+        self.end()
 
 
     def end(self):
-        Game.sound.stopLoop()
+        Game.background.stopLoop()
         self.spaceShip = None
         screen.clear()
         self.output.printField()
-        screen.nodelay(0)
-        c = screen.getch()
-
-        if c == ord('r'):
-            self.prepare()
-        else:
-            exit()
-
-        screen.nodelay(1)
+        # screen.nodelay(0)
+        # c = screen.getch()
+        #
+        # if c == ord('r'):
+        #     self.prepare()
+        # else:
+        #     exit()
+        # screen.nodelay(1)
 
     def lifeLost(self):
         self.status['lifes'] = self.status['lifes'] - 1
@@ -466,8 +504,22 @@ def main(s = None):
     screen = s
     screen.nodelay(1)
 
+    ############################################################################
+    # Sound Config
+    ############################################################################
+    soundConfig = SafeConfigParser()
+    soundConfig.read('./sound.cfg')
 
+    Shoot.soundShooting     = soundLib.Sound(soundConfig.get('Shoot', 'shooting'))
+    Shoot.soundCollision    = soundLib.Sound(soundConfig.get('Shoot', 'obstacle'))
 
+    Obstacle.cSpaceship     = soundLib.Sound(soundConfig.get('Spaceship', 'obstacle'))
+    Goody.cSpaceship        = soundLib.Sound(soundConfig.get('Spaceship', 'goody'))
+    Game.background         = soundLib.Sound(soundConfig.get('General', 'background'))
+
+    ############################################################################
+    # Design Config
+    ############################################################################
     designConfig = SafeConfigParser()
     designConfig.read('./design.cfg')
 
@@ -478,8 +530,8 @@ def main(s = None):
 
     Obstacle.color      = designConfig.getint('Obstacles', 'color')
 
-    SpaceShip.color     = designConfig.getint('SpaceShip', 'color')
-    SpaceShip.design    = designConfig.get('SpaceShip', 'file')
+    SpaceShip.color     = designConfig.getint('Spaceship', 'color')
+    SpaceShip.design    = designConfig.get('Spaceship', 'file')
 
     ingredientsFolder   = designConfig.get('Ingredients', 'folder')
     for nrGoody in range(1, designConfig.getint('Ingredients', 'count') + 1):
@@ -490,7 +542,10 @@ def main(s = None):
                 "name":     designConfig.get(sectionName, 'name')
         })
 
-    # Create Controller
+
+    ############################################################################
+    # Controller Config
+    ############################################################################
     controllerConfig = SafeConfigParser()
     controllerConfig.read('./controller.cfg')
     position = False
@@ -500,22 +555,22 @@ def main(s = None):
         position = controllerConfig.getboolean('UltraSonic', 'position')
         c = UltraSonicController(controllerConfig.get('UltraSonic', 'serialPort'), screen, position)
 
-    o = Output()
 
+
+    ############################################################################
+    # Create Game
+    ############################################################################
+    o = Output()
     g = Game(c, o)
     g.prepare()
     g.run()
-    try:
-        inp.exitFlag = 1
-    except NameError:
-        pass
 
-    timeLib.sleep(0.3)
+    if isinstance(c, UltraSonicController):
+        inp.exitFlag = 1
+        timeLib.sleep(0.3)
+
     screen.refresh()
 
-    Game.sound.close()
-    Goody.sound.close()
-    Obstacle.sound.close()
 
 #main()
 curses.wrapper(main)
