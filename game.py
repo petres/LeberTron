@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 import sys, traceback
@@ -491,7 +491,8 @@ class Game(object):
 
 
     def end(self):
-        Game.background.stopLoop()
+        if Game.background is not None:
+            Game.background.stopLoop()
         self.spaceShip = None
         screen.clear()
         self.output.printField()
@@ -585,14 +586,27 @@ def main(s = None):
     ############################################################################
     # Robot Config
     ############################################################################
+
+    def youGotMsg(msg):
+	       pass
+
+    robot = None
     robotConfig = SafeConfigParser()
     robotConfig.read('./etc/robot.cfg')
     if robotConfig.getboolean('Robot', 'enabled'):
-        bla = BotComm(robotConfig.get('Robot', 'serialPort'), main)
+        logFile = None
+        if robotConfig.getboolean('Logging', 'enabled'):
+            logFile = robotConfig.get('Logging', 'logFile')
+
+        robot = BotComm(robotConfig.get('Robot', 'serialPort'), youGotMsg, logFile = logFile)
+
+
 
     g.prepare()
     g.run()
 
+    if robot is not None:
+        robot.close()
     # Cleaning Up
     if isinstance(c, UltraSonicController):
         inp.exitFlag = 1

@@ -11,24 +11,36 @@ import sys, serial, threading, time
 
 
 class BotComm():
+	def __init__(self, serialPort, listenCallback, logFile = None):
+		self.exitFlag 	= False
+		self.ready 		= False
+		self.logFile	= None
 
-	def __init__(self, serialPort, listenCallback):
-		self.exitFlag = False
-		self.ready = False
 		try:
-			self.serialConn = serial.Serial(port = serialPort, timeout = 0, writeTimeout = 0)
+			self.serialConn 	= serial.Serial(port = serialPort, timeout = 0, writeTimeout = 0)
 			self.listenCallback = listenCallback
-			self.listenThread = threading.Thread(target = self.callbackWrapper)
+			self.listenThread 	= threading.Thread(target = self.callbackWrapper)
 			self.listenThread.start()
-			
-		except Exception, e:
+		except Exception as e:
 			sys.stderr.write(str(e) + '\n')
+
+		if logFile is not None:
+			sys.stderr.write("INFO: Open Logfile " + logFile + "\n")
+			self.logFile = open(logFile, 'w', buffering = 0)
+
+	def log(self, prefix, message):
+		if self.logFile is not None:
+			self.logFile.write(prefix + ": " + message + "\n")
 
 	def close(self):
 		self.exitFlag = True
+		sys.stderr.write("INFO: Waiting for botComm listen thread ... ")
 		self.listenThread.join()
+		sys.stderr.write("DONE" + "\n")
 		# time.sleep(0.2)
 		self.serialConn.close()
+		if self.logFile is not None:
+			self.logFile.close()
 
 	def callbackWrapper(self):
 		serialBuffer = ""
@@ -37,7 +49,8 @@ class BotComm():
 				serialBuffer += self.serialConn.read(1)
 				if (serialBuffer.endswith("\r\n")):
 					command = serialBuffer.rstrip("\r\n")
-					serialBuffer = "" 
+					self.log("R", command + '\\r\\n')
+					serialBuffer = ""
 
 					commandList = command.split(" ")
 
@@ -59,7 +72,7 @@ class BotComm():
 
 					self.listenCallback(command)
 
-			except Exception, e:
+			except Exception as e:
 				sys.stderr.write(str(e) + '\n')
 				continue
 			# finally:
@@ -67,13 +80,19 @@ class BotComm():
 
 	def send(self, verb, *args):
 		try:
-			self.serialConn.write(verb + " " + " ".join(args) + '\r\n')
-		except Exception, e:
+			messageString = verb + " " + " ".join(args)
+			self.serialConn.write(messageString + '\r\n')
+			self.log("T", messageString + '\\r\\n')
+		except Exception as e:
 			sys.stderr.write(str(e) + '\n')
 
+	def pourBottle(self, bottleNr, amount):
+		temp = [0] * 7
+		temp[bottleNr] = amount
+		self.pour(*temp)
 
 	def pour(self, b0, b1, b2, b3, b4, b5, b6):
-		"""pour x_i grams of ingredient i, for i=1..n; will skip bottle 
+		"""pour x_i grams of ingredient i, for i=1..n; will skip bottle
 		if x_n < UPRIGHT_OFFSET"""
 		# TODO: Check if ready for pour
 		self.send("POUR", b0, b1, b2, b3, b4, b5, b6)
@@ -84,7 +103,7 @@ class BotComm():
 		self.send("ABORT")
 
 	def resume(self):
-		"""resume after BOTTLE_EMPTY error, use this command when 
+		"""resume after BOTTLE_EMPTY error, use this command when
 		bottle is refilled"""
 		self.send("RESUME")
 
@@ -93,23 +112,23 @@ class BotComm():
 		self.send("DANCE")
 
 	def tare(self):
-		"""sets scale to 0, make sure nothing is on scale when 
-		sending this command Note: taring is deleled, when Arduino 
+		"""sets scale to 0, make sure nothing is on scale when
+		sending this command Note: taring is deleled, when Arduino
 		is reseted (e.g. on lost serial connection)"""
 		self.send("TARE")
 
 	def turn(self, bottle_nr, microseconds):
-		"""turns a bottle (numbered from 0 to 6) to a position 
+		"""turns a bottle (numbered from 0 to 6) to a position
 		given in microseconds"""
 		self.send("TURN")
 
 	def echo(self, msg):
-		"""Example: ECHO ENJOY\r\n Arduino will then print "ENJOY" 
+		"""Example: ECHO ENJOY\r\n Arduino will then print "ENJOY"
 		This is a workaround to resend garbled messages manually."""
 		self.send("ECHO", msg)
 
 	def nop(self):
-		"""Arduino will do nothing and send message "DOING_NOTHING". 
+		"""Arduino will do nothing and send message "DOING_NOTHING".
 		This is a dummy message, for testing only."""
 		self.send("NOP")
 
@@ -125,4 +144,3 @@ if __name__ == '__main__':
 			c.pour(str(10), str(10), str(10), str(10), str(10), str(10), str(10))
 
 		# time.sleep(0.2)
-

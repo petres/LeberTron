@@ -59,7 +59,7 @@ def inputRead():
 			# 		shoot = True
 
 			# if state != prevState:
-			print state
+			#print state
 
 			# if shoot:
 			# 	print "Shoot!"
@@ -96,4 +96,4 @@ if __name__ == '__main__':
 	except KeyboardInterrupt:
 		exitFlag = 1
 		threadRead.join()
-		print "Ciao..."
+		#print "Ciao..."
