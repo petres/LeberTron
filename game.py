@@ -13,7 +13,7 @@ dname = os.path.dirname(abspath)
 os.chdir(dname)
 
 # Redirect error messages
-sys.stderr = open('./log/error.txt', 'w')
+sys.stderr = open('./log/error.txt', 'w', buffering = 0)
 
 sys.path.append("./lib")
 
@@ -187,6 +187,8 @@ class Goody(Object):
             Goody.cSpaceship.play()
         self.game.status['points'] = self.game.status['points'] + 5
         self.game.status['goodies'].append(self.name)
+        if self.game.robot is not None:
+            self.game.robot.pourBottle(self.arduino, 10)
 
     def __init__(self, game, **args):
         if "signs" not in args:
@@ -194,7 +196,7 @@ class Goody(Object):
             args["signs"] = getFromFile(Goody.types[i]["design"])
             args["color"] = Goody.types[i]["color"]
             self.name = Goody.types[i]["name"]
-            self.ouptut = i
+            self.arduino  = Goody.types[i]["arduino"]
         super(Goody, self).__init__(game, **args)
 
 
@@ -288,7 +290,7 @@ class Output(object):
         self.addSign((x, 9), "time:    " + str(game.time))
         self.addSign((x,10), "objects: " + str(len(Object.objects)))
 
-        self.printGlass(x, 12, game.status["goodies"])
+        #self.printGlass(x, 12, game.status["goodies"])
 
 
     def printGlass(self, x, y, goodies):
@@ -423,9 +425,10 @@ class Game(object):
     moveStepSize = 3
     background  = None
 
-    def __init__(self, controller, output):
+    def __init__(self, controller, output, robot):
         self.controller = controller
-        self.output = output
+        self.output     = output
+        self.robot      = robot
 
     def prepare(self):
         self.time   = 0
@@ -481,8 +484,9 @@ class Game(object):
                 g = Goody(self)
                 g.setRandomXPos(self.output)
             if self.time%40 == 0:
-                o = Obstacle(self)
-                o.setRandomXPos(self.output)
+                pass
+                #o = Obstacle(self)
+                #o.setRandomXPos(self.output)
 
             timeLib.sleep(.02)
 
@@ -581,7 +585,7 @@ def main(s = None):
     # Create Game
     ############################################################################
     o = Output()
-    g = Game(c, o)
+
 
     ############################################################################
     # Robot Config
@@ -600,7 +604,7 @@ def main(s = None):
 
         robot = BotComm(robotConfig.get('Robot', 'serialPort'), youGotMsg, logFile = logFile)
 
-
+    g = Game(controller = c, output = o, robot = robot)
 
     g.prepare()
     g.run()

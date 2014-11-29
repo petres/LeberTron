@@ -1,2 +1,2 @@
 INFO: Open Logfile ./log/robot.txt
-INFO: Waiting for botComm listen thread ... DONE
+INFO: SEND POUR COMMAND (0 0 10 0 0 0 0)INFO: SEND POUR COMMAND (10 0 0 0 0 0 0)INFO: SEND POUR COMMAND (10 0 0 0 0 0 0)INFO: SEND POUR COMMAND (0 0 0 0 10 0 0)INFO: SEND POUR COMMAND (0 0 0 0 0 0 10)INFO: Waiting for botComm listen thread ... DONE
