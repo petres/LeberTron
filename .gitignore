@@ -1,5 +1,6 @@
 *.pyc
 *~
 js/node_modules/
-log/
+log/*
 .idea/
+.build

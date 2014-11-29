@@ -20,7 +20,7 @@ sys.path.append("./lib")
 import sound as soundLib
 from botComm import BotComm
 
-
+inp = None
 
 locale.setlocale(locale.LC_ALL, "")
 
@@ -358,9 +358,11 @@ class Controller(object):
 
 class UltraSonicController(Controller):
     def __init__(self, serialPort, screen, position = False):
-        import inputComm as inp
-        self.inp = inp
-        self.distPos    = (10, 60)
+        import inputComm as ultraSonicInput
+        global inp
+
+        inp = ultraSonicInput
+        self.distPos    = (30, 100)
         inp.connect(serialPort)
         inp.start()
         super(UltraSonicController, self).__init__(screen, position)
@@ -377,7 +379,7 @@ class UltraSonicController(Controller):
             return Controller.SHOOT
 
         if self.position:
-            return float(self.inp.curr - self.distPos[0])/(self.distPos[1] - self.distPos[0])
+            return float(inp.curr - self.distPos[0])/(self.distPos[1] - self.distPos[0])
 
         if inp.state == -1:
             return Controller.LEFT
@@ -386,7 +388,8 @@ class UltraSonicController(Controller):
 
         return None
 
-
+    def close(self):
+        inp.exitFlag = 1
     # def getPosition(self):
     #     float(inp.curr - self.distPos[0])/(self.distPos[1] - self.distPos[0])
 
@@ -465,7 +468,7 @@ class Game(object):
             d = self.controller.getInput()
 
             if d == Controller.QUIT:
-                self.end()
+                break
             elif d == Controller.SHOOT:
                 o = Shoot(self, coords = (self.spaceShip.coords[0], self.spaceShip.coords[1] - self.spaceShip.info['rHeight']))
 
@@ -498,12 +501,13 @@ class Game(object):
             self.output.printGame(self)
 
             if self.createObjects:
-                if self.time%100 == 0:
+                if self.time%60 == 0:
                     g = Goody(self)
                     g.setRandomXPos(self.output)
                 if self.time%40 == 0:
                     o = Obstacle(self)
                     o.setRandomXPos(self.output)
+                    #pass
 
             self.time += 1
             timeLib.sleep(.03)
@@ -514,7 +518,6 @@ class Game(object):
     def end(self):
         if Game.background is not None:
             Game.background.stopLoop()
-        self.spaceShip = None
         screen.clear()
         self.output.printField()
         # screen.nodelay(0)
@@ -631,7 +634,7 @@ def main(s = None):
         robot.close()
     # Cleaning Up
     if isinstance(c, UltraSonicController):
-        inp.exitFlag = 1
+        c.close()
         timeLib.sleep(0.3)
 
     screen.refresh()

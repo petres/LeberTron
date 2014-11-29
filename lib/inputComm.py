@@ -37,7 +37,7 @@ def inputRead():
 			# CURRENT POSITION
 			line = serialConn.readline().rstrip('\r\n')
 			distances = line.split(" ")
-			curr = int(distances[0])
+			curr = int(distances[0])/90*2
 			shoot_dist = distances[1]
 			## SLIDING WINDOW
 			## current value is based on last n

@@ -11,24 +11,27 @@ import sys, serial, threading, time
 from Queue import Queue
 
 
-class BotComm():
+class BotComm(object):
 	def __init__(self, serialPort, listenCallback, logFile = None):
 		self.exitFlag 	= False
 		self.ready 		= False
+		self.pouring	= False
 		self.logFile	= None
 		self.pourQueue	= Queue()
 
+		if logFile is not None:
+			sys.stderr.write("INFO: Open Logfile " + logFile + "\n")
+			self.logFile = open(logFile, 'w', buffering = 0)
+
 		try:
-			self.serialConn 	= serial.Serial(port = serialPort, timeout = 0, writeTimeout = 0)
+			self.serialConn 	= serial.Serial(port = serialPort, timeout = 0)
 			self.listenCallback = listenCallback
 			self.listenThread 	= threading.Thread(target = self.callbackWrapper)
 			self.listenThread.start()
 		except Exception as e:
 			sys.stderr.write(str(e) + '\n')
 
-		if logFile is not None:
-			sys.stderr.write("INFO: Open Logfile " + logFile + "\n")
-			self.logFile = open(logFile, 'w', buffering = 0)
+
 
 
 	def log(self, prefix, message):
@@ -61,13 +64,15 @@ class BotComm():
 
 					if commandList[0] == "READY":
 						if int(commandList[2]) == 1:
-							self.ready = True
+							if self.pouring == False:
+								self.ready = True
 
 					elif commandList[0] == "WAITING_FOR_CUP":
 						pass
 					elif commandList[0] == "POURING":
 						pass
 					elif commandList[0] == "ENJOY":
+						self.pouring = False
 						pass
 					elif commandList[0] == "ERROR":
 						pass
@@ -78,9 +83,9 @@ class BotComm():
 
 					self.listenCallback(command)
 
-				if not self.pourQueue.empty() and self.ready:
-					self.pour(*self.pourQueue.get())
-					self.ready = False
+					if not self.pourQueue.empty() and self.ready:
+						self.pour(*self.pourQueue.get())
+
 
 			except Exception as e:
 				sys.stderr.write(str(e) + '\n')
@@ -94,6 +99,7 @@ class BotComm():
 			messageString = verb + " " + " ".join(str(n) for n in args)
 			self.serialConn.write(messageString + '\r\n')
 			self.log("T", messageString + '\\r\\n')
+			self.serialConn.flushInput()
 		except Exception as e:
 			sys.stderr.write(str(e) + '\n')
 
@@ -110,8 +116,11 @@ class BotComm():
 		"""pour x_i grams of ingredient i, for i=1..n; will skip bottle
 		if x_n < UPRIGHT_OFFSET"""
 		# TODO: Check if ready for pour
+		#from time import sleep
+		#sleep(5)
 		self.send("POUR", *args)
 		self.ready = False
+		self.pouring = True
 
 
 	def abort(self):
