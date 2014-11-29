@@ -1,2 +1,10 @@
-INFO: Open Logfile ./log/robot.txt
-INFO: SEND POUR COMMAND (0 0 10 0 0 0 0)INFO: SEND POUR COMMAND (10 0 0 0 0 0 0)INFO: SEND POUR COMMAND (10 0 0 0 0 0 0)INFO: SEND POUR COMMAND (0 0 0 0 10 0 0)INFO: SEND POUR COMMAND (0 0 0 0 0 0 10)INFO: Waiting for botComm listen thread ... DONE
+Traceback (most recent call last):
+  File "./game.py", line 638, in <module>
+    curses.wrapper(main)
+  File "/usr/lib/python2.7/curses/wrapper.py", line 43, in wrapper
+    return func(stdscr, *args, **kwds)
+  File "./game.py", line 625, in main
+    g.run()
+  File "./game.py", line 479, in run
+    x = self.spaceShip.coords[0]
+AttributeError: 'NoneType' object has no attribute 'coords'

@@ -1,4 +1,60 @@
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+T: POUR 0 0 0 10 0 0 0\r\n
+R: DEBUG     Will pour too much\r\n
+R: DEBUG     turn 3, params current_pos: 2240, step: -1, pos: 1377, delay_ms: 2, \r\n
+R: POURING 3 65\r\n
+R: DEBUG     Turn down\r\n
+R: DEBUG     turn 3, params current_pos: 2110, step: -1, pos: 1090, delay_ms: 2, \r\n
+R: DEBUG     Waiting\r\n
+R: DEBUG     turn 3, params current_pos: 1090, step: 1, pos: 1665, delay_ms: 4, \r\n
+R: DEBUG     Stats: requested_amount: 10, measured_amount: 0, \r\n
+R: DEBUG     turn 3, params current_pos: 1665, step: 1, pos: 2240, delay_ms: 4, \r\n
 R: ENJOY 0 0 0 0 0 0 0 \r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+T: POUR 0 0 0 0 0 0 10\r\n
+R: DEBUG     Will pour too much\r\n
+R: DEBUG     turn 6, params current_pos: 2100, step: -1, pos: 1215, delay_ms: 2, \r\n
+R: POURING 6 65\r\n
+R: DEBUG     Turn down\r\n
+R: DEBUG     turn 6, params current_pos: 1970, step: -1, pos: 920, delay_ms: 2, \r\n
+R: DEBUG     Waiting\r\n
+R: DEBUG     turn 6, params current_pos: 920, step: 1, pos: 1510, delay_ms: 4, \r\n
+R: DEBUG     Stats: requested_amount: 10, measured_amount: 0, \r\n
+R: DEBUG     turn 6, params current_pos: 1510, step: 1, pos: 2100, delay_ms: 4, \r\n
+R: ENJOY 0 0 0 0 0 0 0 \r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+T: POUR 0 0 0 0 0 0 10\r\n
+R: DEBUG     Will pour too much\r\n
+R: DEBUG     turn 6, params current_pos: 2100, step: -1, pos: 1215, delay_ms: 2, \r\n
+R: POURING 6 65\r\n
+R: DEBUG     Turn down\r\n
+R: DEBUG     turn 6, params current_pos: 1971, step: -1, pos: 920, delay_ms: 2, \r\n
+R: DEBUG     Waiting\r\n
+R: DEBUG     turn 6, params current_pos: 920, step: 1, pos: 1510, delay_ms: 4, \r\n
+R: DEBUG     Stats: requested_amount: 10, measured_amount: 0, \r\n
+R: DEBUG     turn 6, params current_pos: 1510, step: 1, pos: 2100, delay_ms: 4, \r\n
+R: ENJOY 0 0 0 0 0 0 0 \r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
 R: READY 65 1\r\n
 R: READY 65 1\r\n
 R: READY 65 1\r\n
@@ -7,7 +63,188 @@ R: DEBUG     Will pour too much\r\n
 R: DEBUG     turn 2, params current_pos: 2400, step: -1, pos: 1515, delay_ms: 2, \r\n
 R: POURING 2 65\r\n
 R: DEBUG     Turn down\r\n
-R: DEBUG     turn 2, params current_pos: 2272, step: -1, pos: 1220, delay_ms: 2, \r\n
+R: DEBUG     turn 2, params current_pos: 2271, step: -1, pos: 1220, delay_ms: 2, \r\n
+R: DEBUG     Waiting\r\n
+R: DEBUG     turn 2, params current_pos: 1220, step: 1, pos: 1810, delay_ms: 4, \r\n
+R: DEBUG     Stats: requested_amount: 10, measured_amount: 0, \r\n
+R: DEBUG     turn 2, params current_pos: 1810, step: 1, pos: 2400, delay_ms: 4, \r\n
+R: ENJOY 0 0 0 0 0 0 0 \r\n
+R: READY 65 1\r\n
+T: POUR 0 0 0 0 0 0 10\r\n
+R: DEBUG     Will pour too much\r\n
+R: DEBUG     turn 6, params current_pos: 2100, step: -1, pos: 1215, delay_ms: 2, \r\n
+R: POURING 6 65\r\n
+R: DEBUG     Turn down\r\n
+R: DEBUG     turn 6, params current_pos: 1970, step: -1, pos: 920, delay_ms: 2, \r\n
+R: DEBUG     Waiting\r\n
+R: DEBUG     turn 6, params current_pos: 920, step: 1, pos: 1510, delay_ms: 4, \r\n
+R: DEBUG     Stats: requested_amount: 10, measured_amount: 0, \r\n
+R: DEBUG     turn 6, params current_pos: 1510, step: 1, pos: 2100, delay_ms: 4, \r\n
+R: ENJOY 0 0 0 0 0 0 0 \r\n
+R: READY 65 1\r\n
+T: POUR 10 0 0 0 0 0 0\r\n
+R: DEBUG     Will pour too much\r\n
+R: DEBUG     turn 0, params current_pos: 2380, step: -1, pos: 1495, delay_ms: 2, \r\n
+R: POURING 0 65\r\n
+R: DEBUG     Turn down\r\n
+R: DEBUG     turn 0, params current_pos: 2251, step: -1, pos: 1200, delay_ms: 2, \r\n
+R: DEBUG     Waiting\r\n
+R: DEBUG     turn 0, params current_pos: 1200, step: 1, pos: 1790, delay_ms: 4, \r\n
+R: DEBUG     Stats: requested_amount: 10, measured_amount: 0, \r\n
+R: DEBUG     turn 0, params current_pos: 1790, step: 1, pos: 2380, delay_ms: 4, \r\n
+R: ENJOY 0 0 0 0 0 0 0 \r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+T: POUR 0 0 10 0 0 0 0\r\n
+R: DEBUG     Will pour too much\r\n
+R: DEBUG     turn 2, params current_pos: 2400, step: -1, pos: 1515, delay_ms: 2, \r\n
+R: POURING 2 65\r\n
+R: DEBUG     Turn down\r\n
+R: DEBUG     turn 2, params current_pos: 2271, step: -1, pos: 1220, delay_ms: 2, \r\n
+R: DEBUG     Waiting\r\n
+R: DEBUG     turn 2, params current_pos: 1220, step: 1, pos: 1810, delay_ms: 4, \r\n
+R: DEBUG     Stats: requested_amount: 10, measured_amount: 0, \r\n
+R: DEBUG     turn 2, params current_pos: 1810, step: 1, pos: 2400, delay_ms: 4, \r\n
+R: ENJOY 0 0 0 0 0 0 0 \r\n
+R: READY 65 1\r\n
+T: POUR 10 0 0 0 0 0 0\r\n
+R: DEBUG     Will pour too much\r\n
+R: DEBUG     turn 0, params current_pos: 2380, step: -1, pos: 1495, delay_ms: 2, \r\n
+R: POURING 0 65\r\n
+R: DEBUG     Turn down\r\n
+R: DEBUG     turn 0, params current_pos: 2250, step: -1, pos: 1200, delay_ms: 2, \r\n
+R: DEBUG     Waiting\r\n
+R: DEBUG     turn 0, params current_pos: 1200, step: 1, pos: 1790, delay_ms: 4, \r\n
+R: DEBUG     Stats: requested_amount: 10, measured_amount: 0, \r\n
+R: DEBUG     turn 0, params current_pos: 1790, step: 1, pos: 2380, delay_ms: 4, \r\n
+R: ENJOY 0 0 0 0 0 0 0 \r\n
+R: READY 65 1\r\n
+T: POUR 0 0 0 0 0 10 0\r\n
+R: DEBUG     Will pour too much\r\n
+R: DEBUG     turn 5, params current_pos: 2400, step: -1, pos: 1535, delay_ms: 2, \r\n
+R: POURING 5 65\r\n
+R: DEBUG     Turn down\r\n
+R: DEBUG     turn 5, params current_pos: 2271, step: -1, pos: 1240, delay_ms: 2, \r\n
+R: DEBUG     Waiting\r\n
+R: DEBUG     turn 5, params current_pos: 1240, step: 1, pos: 1830, delay_ms: 4, \r\n
+R: DEBUG     Stats: requested_amount: 10, measured_amount: 0, \r\n
+R: DEBUG     turn 5, params current_pos: 1830, step: 1, pos: 2420, delay_ms: 4, \r\n
+R: ENJOY 0 0 0 0 0 0 0 \r\n
+R: READY 65 1\r\n
+T: POUR 0 0 0 0 10 0 0\r\n
+R: DEBUG     Will pour too much\r\n
+R: DEBUG     turn 4, params current_pos: 2100, step: -1, pos: 1237, delay_ms: 2, \r\n
+R: POURING 4 65\r\n
+R: DEBUG     Turn down\r\n
+R: DEBUG     turn 4, params current_pos: 1971, step: -1, pos: 950, delay_ms: 2, \r\n
+R: DEBUG     Waiting\r\n
+R: DEBUG     turn 4, params current_pos: 950, step: 1, pos: 1525, delay_ms: 4, \r\n
+R: DEBUG     Stats: requested_amount: 10, measured_amount: 0, \r\n
+R: DEBUG     turn 4, params current_pos: 1525, step: 1, pos: 2100, delay_ms: 4, \r\n
+R: ENJOY 0 0 0 0 0 0 0 \r\n
+R: READY 65 1\r\n
+T: POUR 0 10 0 0 0 0 0\r\n
+R: DEBUG     Will pour too much\r\n
+R: DEBUG     turn 1, params current_pos: 2400, step: -1, pos: 1515, delay_ms: 2, \r\n
+R: POURING 1 65\r\n
+R: DEBUG     Turn down\r\n
+R: DEBUG     turn 1, params current_pos: 2271, step: -1, pos: 1220, delay_ms: 2, \r\n
+R: DEBUG     Waiting\r\n
+R: DEBUG     turn 1, params current_pos: 1220, step: 1, pos: 1810, delay_ms: 4, \r\n
+R: DEBUG     Stats: requested_amount: 10, measured_amount: 0, \r\n
+R: DEBUG     turn 1, params current_pos: 1810, step: 1, pos: 2400, delay_ms: 4, \r\n
+R: ENJOY 0 0 0 0 0 0 0 \r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+T: POUR 0 0 0 10 0 0 0\r\n
+R: DEBUG     Will pour too much\r\n
+R: DEBUG     turn 3, params current_pos: 2240, step: -1, pos: 1377, delay_ms: 2, \r\n
+R: POURING 3 65\r\n
+R: DEBUG     Turn down\r\n
+R: DEBUG     turn 3, params current_pos: 2110, step: -1, pos: 1090, delay_ms: 2, \r\n
+R: DEBUG     Waiting\r\n
+R: DEBUG     turn 3, params current_pos: 1090, step: 1, pos: 1665, delay_ms: 4, \r\n
+R: DEBUG     Stats: requested_amount: 10, measured_amount: 0, \r\n
+R: DEBUG     turn 3, params current_pos: 1665, step: 1, pos: 2240, delay_ms: 4, \r\n
+R: ENJOY 0 0 0 0 0 0 0 \r\n
+R: READY 65 1\r\n
+T: POUR 10 0 0 0 0 0 0\r\n
+R: DEBUG     Will pour too much\r\n
+R: DEBUG     turn 0, params current_pos: 2380, step: -1, pos: 1495, delay_ms: 2, \r\n
+R: POURING 0 65\r\n
+R: DEBUG     Turn down\r\n
+R: DEBUG     turn 0, params current_pos: 2251, step: -1, pos: 1200, delay_ms: 2, \r\n
+R: DEBUG     Waiting\r\n
+R: DEBUG     turn 0, params current_pos: 1200, step: 1, pos: 1790, delay_ms: 4, \r\n
+R: DEBUG     Stats: requested_amount: 10, measured_amount: 0, \r\n
+R: DEBUG     turn 0, params current_pos: 1790, step: 1, pos: 2380, delay_ms: 4, \r\n
+R: ENJOY 0 0 0 0 0 0 0 \r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+T: POUR 0 0 0 0 10 0 0\r\n
+R: DEBUG     Will pour too much\r\n
+R: DEBUG     turn 4, params current_pos: 2100, step: -1, pos: 1237, delay_ms: 2, \r\n
+R: POURING 4 65\r\n
+R: DEBUG     Turn down\r\n
+R: DEBUG     turn 4, params current_pos: 1970, step: -1, pos: 950, delay_ms: 2, \r\n
+R: DEBUG     Waiting\r\n
+R: DEBUG     turn 4, params current_pos: 950, step: 1, pos: 1525, delay_ms: 4, \r\n
+R: DEBUG     Stats: requested_amount: 10, measured_amount: 0, \r\n
+R: DEBUG     turn 4, params current_pos: 1525, step: 1, pos: 2100, delay_ms: 4, \r\n
+R: ENJOY 0 0 0 0 0 0 0 \r\n
+R: READY 65 1\r\n
+T: POUR 0 0 0 0 0 0 10\r\n
+R: DEBUG     Will pour too much\r\n
+R: DEBUG     turn 6, params current_pos: 2100, step: -1, pos: 1215, delay_ms: 2, \r\n
+R: POURING 6 65\r\n
+R: DEBUG     Turn down\r\n
+R: DEBUG     turn 6, params current_pos: 1970, step: -1, pos: 920, delay_ms: 2, \r\n
+R: DEBUG     Waiting\r\n
+R: DEBUG     turn 6, params current_pos: 920, step: 1, pos: 1510, delay_ms: 4, \r\n
+R: DEBUG     Stats: requested_amount: 10, measured_amount: 0, \r\n
+R: DEBUG     turn 6, params current_pos: 1510, step: 1, pos: 2100, delay_ms: 4, \r\n
+R: ENJOY 0 0 0 0 0 0 0 \r\n
+R: READY 65 1\r\n
+T: POUR 0 0 10 0 0 0 0\r\n
+R: DEBUG     Will pour too much\r\n
+R: DEBUG     turn 2, params current_pos: 2400, step: -1, pos: 1515, delay_ms: 2, \r\n
+R: POURING 2 65\r\n
+R: DEBUG     Turn down\r\n
+R: DEBUG     turn 2, params current_pos: 2271, step: -1, pos: 1220, delay_ms: 2, \r\n
+R: DEBUG     Waiting\r\n
+R: DEBUG     turn 2, params current_pos: 1220, step: 1, pos: 1810, delay_ms: 4, \r\n
+R: DEBUG     Stats: requested_amount: 10, measured_amount: 0, \r\n
+R: DEBUG     turn 2, params current_pos: 1810, step: 1, pos: 2400, delay_ms: 4, \r\n
+R: ENJOY 0 0 0 0 0 0 0 \r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+T: POUR 0 0 0 0 0 10 0\r\n
+R: DEBUG     Will pour too much\r\n
+R: DEBUG     turn 5, params current_pos: 2400, step: -1, pos: 1535, delay_ms: 2, \r\n
+R: POURING 5 65\r\n
+R: DEBUG     Turn down\r\n
+R: DEBUG     turn 5, params current_pos: 2271, step: -1, pos: 1240, delay_ms: 2, \r\n
+R: DEBUG     Waiting\r\n
+R: DEBUG     turn 5, params current_pos: 1240, step: 1, pos: 1830, delay_ms: 4, \r\n
+R: DEBUG     Stats: requested_amount: 10, measured_amount: 0, \r\n
+R: DEBUG     turn 5, params current_pos: 1830, step: 1, pos: 2420, delay_ms: 4, \r\n
+R: ENJOY 0 0 0 0 0 0 0 \r\n
+R: READY 65 1\r\n
+T: POUR 0 0 10 0 0 0 0\r\n
+R: DEBUG     Will pour too much\r\n
+R: DEBUG     turn 2, params current_pos: 2400, step: -1, pos: 1515, delay_ms: 2, \r\n
+R: POURING 2 65\r\n
+R: DEBUG     Turn down\r\n
+R: DEBUG     turn 2, params current_pos: 2271, step: -1, pos: 1220, delay_ms: 2, \r\n
 R: DEBUG     Waiting\r\n
 R: DEBUG     turn 2, params current_pos: 1220, step: 1, pos: 1810, delay_ms: 4, \r\n
 R: DEBUG     Stats: requested_amount: 10, measured_amount: 0, \r\n
@@ -26,16 +263,28 @@ R: DEBUG     Stats: requested_amount: 10, measured_amount: 0, \r\n
 R: DEBUG     turn 0, params current_pos: 1790, step: 1, pos: 2380, delay_ms: 4, \r\n
 R: ENJOY 0 0 0 0 0 0 0 \r\n
 R: READY 65 1\r\n
-T: POUR 10 0 0 0 0 0 0\r\n
+T: POUR 0 0 10 0 0 0 0\r\n
 R: DEBUG     Will pour too much\r\n
-R: DEBUG     turn 0, params current_pos: 2380, step: -1, pos: 1495, delay_ms: 2, \r\n
-R: POURING 0 65\r\n
+R: DEBUG     turn 2, params current_pos: 2400, step: -1, pos: 1515, delay_ms: 2, \r\n
+R: POURING 2 65\r\n
 R: DEBUG     Turn down\r\n
-R: DEBUG     turn 0, params current_pos: 2250, step: -1, pos: 1200, delay_ms: 2, \r\n
+R: DEBUG     turn 2, params current_pos: 2271, step: -1, pos: 1220, delay_ms: 2, \r\n
 R: DEBUG     Waiting\r\n
-R: DEBUG     turn 0, params current_pos: 1200, step: 1, pos: 1790, delay_ms: 4, \r\n
+R: DEBUG     turn 2, params current_pos: 1220, step: 1, pos: 1810, delay_ms: 4, \r\n
 R: DEBUG     Stats: requested_amount: 10, measured_amount: 0, \r\n
-R: DEBUG     turn 0, params current_pos: 1790, step: 1, pos: 2380, delay_ms: 4, \r\n
+R: DEBUG     turn 2, params current_pos: 1810, step: 1, pos: 2400, delay_ms: 4, \r\n
+R: ENJOY 0 0 0 0 0 0 0 \r\n
+R: READY 65 1\r\n
+T: POUR 0 10 0 0 0 0 0\r\n
+R: DEBUG     Will pour too much\r\n
+R: DEBUG     turn 1, params current_pos: 2400, step: -1, pos: 1515, delay_ms: 2, \r\n
+R: POURING 1 65\r\n
+R: DEBUG     Turn down\r\n
+R: DEBUG     turn 1, params current_pos: 2270, step: -1, pos: 1220, delay_ms: 2, \r\n
+R: DEBUG     Waiting\r\n
+R: DEBUG     turn 1, params current_pos: 1220, step: 1, pos: 1810, delay_ms: 4, \r\n
+R: DEBUG     Stats: requested_amount: 10, measured_amount: 0, \r\n
+R: DEBUG     turn 1, params current_pos: 1810, step: 1, pos: 2400, delay_ms: 4, \r\n
 R: ENJOY 0 0 0 0 0 0 0 \r\n
 R: READY 65 1\r\n
 R: READY 65 1\r\n
@@ -46,21 +295,35 @@ R: READY 65 1\r\n
 R: READY 65 1\r\n
 R: READY 65 1\r\n
 R: READY 65 1\r\n
-T: POUR 0 0 0 0 10 0 0\r\n
-R: DEBUG     Will pour too much\r\n
-R: DEBUG     turn 4, params current_pos: 2100, step: -1, pos: 1237, delay_ms: 2, \r\n
-R: POURING 4 65\r\n
-R: DEBUG     Turn down\r\n
-R: DEBUG     turn 4, params current_pos: 1971, step: -1, pos: 950, delay_ms: 2, \r\n
-R: DEBUG     Waiting\r\n
-R: DEBUG     turn 4, params current_pos: 950, step: 1, pos: 1525, delay_ms: 4, \r\n
-R: DEBUG     Stats: requested_amount: 10, measured_amount: 0, \r\n
-R: DEBUG     turn 4, params current_pos: 1525, step: 1, pos: 2100, delay_ms: 4, \r\n
-R: ENJOY 0 0 0 0 0 0 0 \r\n
 R: READY 65 1\r\n
-T: POUR 0 0 0 0 0 0 10\r\n
-R: DEBUG     Will pour too much\r\n
-R: DEBUG     turn 6, params current_pos: 2100, step: -1, pos: 1215, delay_ms: 2, \r\n
-R: POURING 6 65\r\n
-R: DEBUG     Turn down\r\n
-R: DEBUG     turn 6, params current_pos: 1971, step: -1, pos: 920, delay_ms: 2, \r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n
+R: READY 65 1\r\n

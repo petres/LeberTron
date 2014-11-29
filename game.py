@@ -51,6 +51,7 @@ class Object(object):
         self.coords = coords
         self.signs  = signs
         self.color  = color
+        self.startTime = game.time
 
         if speed is None:
             self.speed = random.randint(Object.stdSpeed/2, Object.stdSpeed*2)
@@ -63,19 +64,18 @@ class Object(object):
         self.info['maxHeight']  = len(signs)
         self.info['rHeight']    = (len(signs) - 1)/2
 
-        self.info['widths']  = []
-
+        tmp  = []
         for line in signs:
-            self.info['widths'].append(len(line))
+            tmp.append(len(line))
 
-        self.info['maxWidth']   = max(self.info['widths'])
+        self.info['maxWidth']   = max(tmp)
         self.info['rWidth']     = (self.info['maxWidth'] - 1)/2
 
 
 
     def setRandomXPos(self, output, y = None):
         if y is None:
-            y = -self.game.time/self.speed - 5
+            y = 0
         x = random.randint(2 + self.info['rWidth'], output.fieldSize[0] - 2 - self.info['rWidth'])
         self.coords = (x, y)
 
@@ -107,7 +107,7 @@ class Object(object):
 
 
     def getMapCoords(self):
-        return (self.coords[0], self.coords[1] + self.game.time/self.speed)
+        return (self.coords[0], self.coords[1] + (self.game.time - self.startTime)/self.speed)
 
 
     def draw(self, output):
@@ -141,7 +141,6 @@ class Shoot(Object):
         args["signs"] = getFromFile("./objects/shoot.txt")
         args["color"] = 2
         args["speed"] = 1
-        self.startTime = game.time
         if Shoot.soundShooting is not None:
             Shoot.soundShooting.play()
         super(Shoot, self).__init__(game, **args)
@@ -256,7 +255,7 @@ class Output(object):
         #screen.clear()
 
         for i in range(self.fieldPos[1], self.fieldPos[1] + self.fieldSize[1] + 1):
-            self.addSign((self.fieldPos[0], i), " "*self.fieldSize[0])
+            self.addSign((self.fieldPos[0], i), " "*(self.fieldSize[0] + 1))
 
         self.printField()
         self.printStatus(game)
@@ -371,15 +370,17 @@ class UltraSonicController(Controller):
 
         if c == ord('q'):
             return Controller.QUIT
+        elif c == ord('r'):
+            return Controller.RETRY
 
         if self.position:
             return float(self.inp.curr - self.distPos[0])/(self.distPos[1] - self.distPos[0])
-
 
         if inp.state == -1:
             return Controller.LEFT
         elif inp.state == 1:
             return Controller.RIGHT
+
         return None
 
 
@@ -424,26 +425,36 @@ class Game(object):
     status      = None
     moveStepSize = 3
     background  = None
+    createObjects = False
 
-    def __init__(self, controller, output, robot):
+    def __init__(self, controller, output, robot = None):
         self.controller = controller
         self.output     = output
         self.robot      = robot
-
-    def prepare(self):
+        self.spaceShip = SpaceShip(self)
+        self.spaceShip.coords = (self.output.fieldSize[0]/2, self.output.fieldSize[1] - 2)
         self.time   = 0
         self.status = {}
         self.status['points']   = 0
         self.status['goodies']  = []
         self.status['lifes']    = 3
-        self.removeObjectsAndCreateSpaceship()
+
+
+    def removeObjects(self):
+        for o in list(Object.objects):
+            if not isinstance(o, SpaceShip):
+                Object.objects.remove(o)
+
+
+    def prepare(self):
+        self.time   = 0
+        self.status['points']   = 0
+        self.status['goodies']  = []
+        self.status['lifes']    = 3
+        self.createObjects = True
         if Game.background is not None:
             Game.background.loop()
 
-    def removeObjectsAndCreateSpaceship(self):
-        Object.objects = []
-        self.spaceShip = SpaceShip(self)
-        self.spaceShip.coords = (self.output.fieldSize[0]/2, self.output.fieldSize[1] - 2)
 
 
     def run(self):
@@ -451,9 +462,12 @@ class Game(object):
             d = self.controller.getInput()
 
             if d == Controller.QUIT:
-                break
+                self.end()
             elif d == Controller.SHOOT:
                 o = Shoot(self, coords = (self.spaceShip.coords[0], self.spaceShip.coords[1] - self.spaceShip.info['rHeight']))
+
+            if d == Controller.RETRY:
+                self.prepare()
 
             if self.controller.position == False:
                 m = 0
@@ -480,17 +494,17 @@ class Game(object):
 
             self.output.printGame(self)
 
-            if self.time%50 == 0:
-                g = Goody(self)
-                g.setRandomXPos(self.output)
-            if self.time%40 == 0:
-                pass
-                #o = Obstacle(self)
-                #o.setRandomXPos(self.output)
-
-            timeLib.sleep(.02)
+            if self.createObjects:
+                if self.time%100 == 0:
+                    g = Goody(self)
+                    g.setRandomXPos(self.output)
+                if self.time%40 == 0:
+                    o = Obstacle(self)
+                    o.setRandomXPos(self.output)
 
             self.time += 1
+            timeLib.sleep(.03)
+
         self.end()
 
 
@@ -511,14 +525,16 @@ class Game(object):
 
     def lifeLost(self):
         self.status['lifes'] = self.status['lifes'] - 1
-
+        self.removeObjects()
         if self.status['lifes'] == 0:
-            self.end()
+            self.createObjects = False
+            if Game.background is not None:
+                Game.background.stopLoop()
         else:
-            self.removeObjectsAndCreateSpaceship()
+            pass
 
-
-
+    def robotMessage(self,*bla):
+        pass
 
 def main(s = None):
     global screen
@@ -591,8 +607,7 @@ def main(s = None):
     # Robot Config
     ############################################################################
 
-    def youGotMsg(msg):
-	       pass
+    g = Game(controller = c, output = o)
 
     robot = None
     robotConfig = SafeConfigParser()
@@ -602,11 +617,11 @@ def main(s = None):
         if robotConfig.getboolean('Logging', 'enabled'):
             logFile = robotConfig.get('Logging', 'logFile')
 
-        robot = BotComm(robotConfig.get('Robot', 'serialPort'), youGotMsg, logFile = logFile)
+        robot = BotComm(robotConfig.get('Robot', 'serialPort'), g.robotMessage, logFile = logFile)
 
-    g = Game(controller = c, output = o, robot = robot)
+    g.robot = robot
 
-    g.prepare()
+    #g.prepare()
     g.run()
 
     if robot is not None:
