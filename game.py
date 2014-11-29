@@ -373,6 +373,9 @@ class UltraSonicController(Controller):
         elif c == ord('r'):
             return Controller.RETRY
 
+        if inp.shoot:
+            return Controller.SHOOT
+
         if self.position:
             return float(self.inp.curr - self.distPos[0])/(self.distPos[1] - self.distPos[0])
 

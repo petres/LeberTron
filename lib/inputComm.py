@@ -17,6 +17,10 @@ STEARING_L_MAX = 20
 STEARING_I_MAX = 30
 STEARING_R_MAX = 60
 
+# if there is an object between, we shoot
+SHOOT_MIN = 0
+SHOOT_MAX = 70
+
 state = 0
 curr = 0
 shoot = False
@@ -32,8 +36,9 @@ def inputRead():
 
 			# CURRENT POSITION
 			line = serialConn.readline().rstrip('\r\n')
-			curr = int(line)
-
+			distances = line.split(" ")
+			curr = int(distances[0])
+			shoot_dist = distances[1]
 			## SLIDING WINDOW
 			## current value is based on last n
 			if SLIDING:
@@ -57,12 +62,15 @@ def inputRead():
 			# 	elif curr > STEARING_R_MAX:
 			# 		state = 0
 			# 		shoot = True
-
+			if SHOOT_MIN <= shoot_dist <= SHOOT_MAX:
+				shoot = True
+			else:
+				shoot = False
 			# if state != prevState:
 			#print state
 
-			# if shoot:
-			# 	print "Shoot!"
+			if shoot:
+				print "Shoot!"
 
 			# prevState = state
 
