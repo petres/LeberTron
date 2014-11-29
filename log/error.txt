@@ -1,0 +1,13 @@
+[Errno 2] No such file or directory: '/dev/ttyACM1'
+Traceback (most recent call last):
+  File "./game.py", line 605, in <module>
+    curses.wrapper(main)
+  File "/usr/lib/python2.7/curses/wrapper.py", line 43, in wrapper
+    return func(stdscr, *args, **kwds)
+  File "./game.py", line 594, in main
+    g.run()
+  File "./game.py", line 490, in run
+    self.end()
+  File "./game.py", line 494, in end
+    Game.background.stopLoop()
+AttributeError: 'NoneType' object has no attribute 'stopLoop'

@@ -18,7 +18,7 @@ sys.stderr = open('./log/error.txt', 'w')
 sys.path.append("./lib")
 
 import sound as soundLib
-
+from botComm import BotComm
 
 
 
@@ -142,7 +142,8 @@ class Shoot(Object):
         args["color"] = 2
         args["speed"] = 1
         self.startTime = game.time
-        Shoot.soundShooting.play()
+        if Shoot.soundShooting is not None:
+            Shoot.soundShooting.play()
         super(Shoot, self).__init__(game, **args)
 
     def getMapCoords(self):
@@ -154,7 +155,8 @@ class Shoot(Object):
                 if len(set(self.getPosArray()).intersection(o.getPosArray())) > 0:
                     Object.objects.remove(o)
                     Object.objects.remove(self)
-                    Shoot.soundCollision.play()
+                    if Shoot.soundCollision is not None:
+                        Shoot.soundCollision.play()
                     break
 
 
@@ -163,7 +165,8 @@ class Obstacle(Object):
     cSpaceship  = None
 
     def collision(self):
-        Obstacle.cSpaceship.play()
+        if Obstacle.cSpaceship is not None:
+            Obstacle.cSpaceship.play()
         self.game.lifeLost()
 
     def __init__(self, game, **args):
@@ -180,7 +183,8 @@ class Goody(Object):
     cSpaceship  = None
 
     def collision(self):
-        Goody.cSpaceship.play()
+        if Goody.cSpaceship is not None:
+            Goody.cSpaceship.play()
         self.game.status['points'] = self.game.status['points'] + 5
         self.game.status['goodies'].append(self.name)
 
@@ -353,7 +357,7 @@ class Controller(object):
 
 class UltraSonicController(Controller):
     def __init__(self, serialPort, screen, position = False):
-        import input as inp
+        import inputComm as inp
         self.inp = inp
         self.distPos    = (10, 60)
         inp.connect(serialPort)
@@ -430,7 +434,8 @@ class Game(object):
         self.status['goodies']  = []
         self.status['lifes']    = 3
         self.removeObjectsAndCreateSpaceship()
-        Game.background.loop()
+        if Game.background is not None:
+            Game.background.loop()
 
     def removeObjectsAndCreateSpaceship(self):
         Object.objects = []
@@ -521,12 +526,14 @@ def main(s = None):
     soundConfig = SafeConfigParser()
     soundConfig.read('./etc/sound.cfg')
 
-    Shoot.soundShooting     = soundLib.Sound(soundConfig.get('Shoot', 'shooting'))
-    Shoot.soundCollision    = soundLib.Sound(soundConfig.get('Shoot', 'obstacle'))
+    if soundConfig.getboolean('General', 'enabled'):
+        Shoot.soundShooting     = soundLib.Sound(soundConfig.get('Shoot', 'shooting'))
+        Shoot.soundCollision    = soundLib.Sound(soundConfig.get('Shoot', 'obstacle'))
 
-    Obstacle.cSpaceship     = soundLib.Sound(soundConfig.get('Spaceship', 'obstacle'))
-    Goody.cSpaceship        = soundLib.Sound(soundConfig.get('Spaceship', 'goody'))
-    Game.background         = soundLib.Sound(soundConfig.get('General', 'background'))
+        Obstacle.cSpaceship     = soundLib.Sound(soundConfig.get('Spaceship', 'obstacle'))
+        Goody.cSpaceship        = soundLib.Sound(soundConfig.get('Spaceship', 'goody'))
+        Game.background         = soundLib.Sound(soundConfig.get('General', 'background'))
+
 
     ############################################################################
     # Design Config
@@ -550,7 +557,8 @@ def main(s = None):
         Goody.types.append({
                 "color":    designConfig.getint(sectionName, 'color'),
                 "design":   os.path.join(ingredientsFolder, designConfig.get(sectionName, 'file')),
-                "name":     designConfig.get(sectionName, 'name')
+                "name":     designConfig.get(sectionName, 'name'),
+                "arduino":  designConfig.getint(sectionName, 'arduino')
         })
 
 
@@ -573,9 +581,19 @@ def main(s = None):
     ############################################################################
     o = Output()
     g = Game(c, o)
+
+    ############################################################################
+    # Robot Config
+    ############################################################################
+    robotConfig = SafeConfigParser()
+    robotConfig.read('./etc/robot.cfg')
+    if robotConfig.getboolean('Robot', 'enabled'):
+        bla = BotComm(robotConfig.get('Robot', 'serialPort'), main)
+
     g.prepare()
     g.run()
 
+    # Cleaning Up
     if isinstance(c, UltraSonicController):
         inp.exitFlag = 1
         timeLib.sleep(0.3)
