@@ -1,10 +1,8 @@
 Traceback (most recent call last):
-  File "./game.py", line 638, in <module>
+  File "/home/marcel/PycharmProjects/roboGame/game.py", line 638, in <module>
     curses.wrapper(main)
-  File "/usr/lib/python2.7/curses/wrapper.py", line 43, in wrapper
-    return func(stdscr, *args, **kwds)
-  File "./game.py", line 625, in main
-    g.run()
-  File "./game.py", line 479, in run
-    x = self.spaceShip.coords[0]
-AttributeError: 'NoneType' object has no attribute 'coords'
+  File "/usr/lib/python2.7/curses/wrapper.py", line 22, in wrapper
+    stdscr = curses.initscr()
+  File "/usr/lib/python2.7/curses/__init__.py", line 33, in initscr
+    fd=_sys.__stdout__.fileno())
+_curses.error: setupterm: could not find terminal
