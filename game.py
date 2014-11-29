@@ -1,15 +1,26 @@
 #!/usr/bin/python2
 # -*- coding: utf-8 -*-
+
 import sys, traceback
 import curses, locale
 import random, os, glob
 import time as timeLib
 from ConfigParser import SafeConfigParser
-import sound as soundLib
 
+# Change working directory to the file directory
 abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
 os.chdir(dname)
+
+# Redirect error messages
+sys.stderr = open('./log/error.txt', 'w')
+
+sys.path.append("./lib")
+
+import sound as soundLib
+
+
+
 
 locale.setlocale(locale.LC_ALL, "")
 
@@ -508,7 +519,7 @@ def main(s = None):
     # Sound Config
     ############################################################################
     soundConfig = SafeConfigParser()
-    soundConfig.read('./sound.cfg')
+    soundConfig.read('./etc/sound.cfg')
 
     Shoot.soundShooting     = soundLib.Sound(soundConfig.get('Shoot', 'shooting'))
     Shoot.soundCollision    = soundLib.Sound(soundConfig.get('Shoot', 'obstacle'))
@@ -521,7 +532,7 @@ def main(s = None):
     # Design Config
     ############################################################################
     designConfig = SafeConfigParser()
-    designConfig.read('./design.cfg')
+    designConfig.read('./etc/design.cfg')
 
     # Set obstacles files
     folder = os.path.join(designConfig.get('Obstacles', 'folder'), "")
@@ -547,7 +558,7 @@ def main(s = None):
     # Controller Config
     ############################################################################
     controllerConfig = SafeConfigParser()
-    controllerConfig.read('./controller.cfg')
+    controllerConfig.read('./etc/controller.cfg')
     position = False
     if controllerConfig.get('Controller', 'type') == "keyboard":
         c = KeyboardController(screen, position)
