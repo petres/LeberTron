@@ -1,7 +1,8 @@
 #define trigPinA 6
 #define trigPinB 9
 
-#define echoPin 5
+#define echoPinA 5
+#define echoPinB 10
 
 int distanceA;
 int distanceB;
@@ -15,26 +16,24 @@ void setup() {
         pinMode(trigPinB, OUTPUT);
 	pinMode(echoPin, INPUT);
   
-	digitalWrite(trigPinA, LOW);  // Added this line  
+	digitalWrite(trigPinA, LOW);
         digitalWrite(trigPinB, LOW);
-	delayMicroseconds(2); // Added this line
+	delayMicroseconds(2);
 }
 
 void loop() {
-	distanceA = getDistance(trigPinA);
-	distanceB = getDistance(trigPinB);
+	distanceA = getDistance(trigPinA, echoPinA);
+	distanceB = getDistance(trigPinB, echoPinB);
 
-	Serial.print("{\"A\": ");
         Serial.print(distanceA);
-        Serial.print(", \"B\": ");
-        Serial.print(distanceB);
-        Serial.println("}; ");
+        Serial.print(" ");
+        Serial.println(distanceB);
 
 	delay(100);
 	//delay(10);
 }
 
-unsigned int getDistance(int trigPin) {
+unsigned int getDistance(int trigPin, int echoPin) {
 	long duration, distance;
 	digitalWrite(trigPin, HIGH);
 	delayMicroseconds(10); // Added this line
