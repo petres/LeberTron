@@ -25,6 +25,7 @@ inp = None
 locale.setlocale(locale.LC_ALL, "")
 
 screen = None
+inp = None
 ################################################################################
 # HELPER FUNCTIONS
 ################################################################################
@@ -229,16 +230,10 @@ class SpaceShip(Object):
 ################################################################################
 
 class Output(object):
-    rightStatusWidth = 30
-    fieldPos  = None
-    fieldSize = None
-    statusPos = None
+    statusWidth = 28
 
     def __init__(self):
-
-        screen.clear()
         screen.nodelay(1)
-        #screen.curs_set(0)
         curses.curs_set(0)
         curses.start_color()
 
@@ -248,19 +243,25 @@ class Output(object):
 
         y, x = screen.getmaxyx()
         y -= 3
-        x -= 3 + Output.rightStatusWidth
+        x -= 3 + Output.statusWidth
         self.fieldPos = (1, 1)
         self.fieldSize = (x, y)
-        self.statusPos = (x + 5, 0)
+        self.statusPos = (x + 4, 0)
+        self.statusSize = (Output.statusWidth - 3,  y + 2)
+        self.printField()
+
+    def prepareGame(self):
+        screen.clear()
+        self.printField()
 
 
     def printGame(self, game):
         #screen.clear()
 
-        for i in range(self.fieldPos[1], self.fieldPos[1] + self.fieldSize[1] + 1):
-            self.addSign((self.fieldPos[0], i), " "*(self.fieldSize[0] + 1))
+        self.clearField(self.fieldPos, self.fieldSize, sign = " ")
+        self.clearField(self.statusPos, self.statusSize, sign = " ")
 
-        self.printField()
+        #self.printField()
         self.printStatus(game)
 
         for o in list(Object.objects):
@@ -277,16 +278,20 @@ class Output(object):
             self.addSign((self.fieldPos[0] + self.fieldSize[0] + 1, i), u"█")
 
 
+    def clearField(self, pos, size, sign = " "):
+        for i in range(pos[1], pos[1] + size[1] + 1):
+            self.addSign((pos[0], i), sign*(size[0] + 1))
+
+
     def printStatus(self, game):
         x, y = self.statusPos
+        x = x + 3
         self.addSign((x, 1), "Sensor:")
-        try:
+        if inp is not None:
             self.addSign((x, 2), "cm slid: " + str(round(inp.curr)))
             self.addSign((x, 3), "cm now:  " + str(round(inp.currA)))
             self.addSign((x, 4), "shoot:   " + str(round(inp.shoot)))
             self.addSign((x, 5), "shoot d: " + str(round(inp.shootDist)))
-        except NameError:
-            pass
 
         self.addSign((x, 9), "Game:")
         self.addSign((x,10), "points:  " + str(game.status['points']))
@@ -295,6 +300,17 @@ class Output(object):
         self.addSign((x,13), "objects: " + str(len(Object.objects)))
 
         #self.printGlass(x, 12, game.status["goodies"])
+
+    def printCountdown(self, nr):
+        signs = getFromFile("./screens/countdown/" + str(nr) + ".txt")
+        w, h = (20, 16)
+        x, y = self.fieldSize
+        bx = (x - w)/2
+        by = (y - h)/2
+        for i, line in enumerate(signs):
+            ty = by + i
+            self.addSign((bx, ty), line, True)
+
 
 
     def printGlass(self, x, y, goodies):
@@ -365,7 +381,6 @@ class UltraSonicController(Controller):
     def __init__(self, serialPort, screen, position = False):
         import inputComm as ultraSonicInput
         global inp
-
         inp = ultraSonicInput
         self.distPos    = (30, 80)
         inp.connect(serialPort)
@@ -431,20 +446,20 @@ class KeyboardController(Controller):
 ################################################################################
 
 class Game(object):
-    spaceShip   = None
-    time        = None
-    status      = None
     moveStepSize = 3
     background  = None
     createObjects = False
+    countdownTime = 30
 
     def __init__(self, controller, output, robot = None):
+        self.time   = 0
         self.controller = controller
         self.output     = output
         self.robot      = robot
         self.spaceShip = SpaceShip(self)
         self.spaceShip.coords = (self.output.fieldSize[0]/2, self.output.fieldSize[1] - 2)
-        self.time   = 0
+        self.countdown = 0
+
         self.status = {}
         self.status['points']   = 0
         self.status['goodies']  = []
@@ -462,7 +477,8 @@ class Game(object):
         self.status['points']   = 0
         self.status['goodies']  = []
         self.status['lifes']    = 3
-        self.createObjects = True
+        self.output.prepareGame()
+        self.countdown = 3
         if Game.background is not None:
             Game.background.loop()
 
@@ -504,6 +520,15 @@ class Game(object):
                 o.check()
 
             self.output.printGame(self)
+
+            if self.countdown > 0:
+                self.output.printCountdown(self.countdown)
+                if self.time > Game.countdownTime:
+                    self.countdown -= 1
+                    self.time = 0
+                    if self.countdown == 0:
+                        self.createObjects = True
+
 
             if self.createObjects:
                 if self.time%60 == 0:
