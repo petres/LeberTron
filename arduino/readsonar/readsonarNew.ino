@@ -2,7 +2,7 @@
 #define echoPin 5
 
 void setup() {
-    Serial.begin (9600);
+    Serial.begin(9600);
     pinMode(trigPin, OUTPUT);
     digitalWrite(trigPin, LOW);
     pinMode(echoPin, INPUT);
@@ -10,11 +10,13 @@ void setup() {
 
 void loop() {
     unsigned long duration;
+
+    delay(40);
+
     digitalWrite(trigPin, HIGH);
     delayMicroseconds(10);
     digitalWrite(trigPin, LOW);
-    duration = pulseIn(echoPin, HIGH);
-
+    duration = pulseIn(echoPin, HIGH, 10000UL);
     Serial.println(duration);
-    delay(500);
+    Serial.flush();
 }

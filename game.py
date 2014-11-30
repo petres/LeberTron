@@ -98,7 +98,10 @@ class Object(object):
 
     def check(self):
         if len(set(self.getPosArray()).intersection(self.game.spaceShip.getPosArray())) > 0:
-            Object.objects.remove(self)
+            try:
+                Object.objects.remove(self)
+            except ValueError as e:
+                pass
             self.collision()
 
 
@@ -278,16 +281,18 @@ class Output(object):
         x, y = self.statusPos
         self.addSign((x, 1), "Sensor:")
         try:
-            self.addSign((x, 2), "cm:      " + str(round(inp.curr)))
-            self.addSign((x, 4), "dir:     " + str(inp.state))
+            self.addSign((x, 2), "cm slid: " + str(round(inp.curr)))
+            self.addSign((x, 3), "cm now:  " + str(round(inp.currA)))
+            self.addSign((x, 4), "shoot:   " + str(round(inp.shoot)))
+            self.addSign((x, 5), "shoot d: " + str(round(inp.shootDist)))
         except NameError:
             pass
 
-        self.addSign((x, 6), "Game:")
-        self.addSign((x, 7), "points:  " + str(game.status['points']))
-        self.addSign((x, 8), "lifes:   " + str(game.status['lifes']))
-        self.addSign((x, 9), "time:    " + str(game.time))
-        self.addSign((x,10), "objects: " + str(len(Object.objects)))
+        self.addSign((x, 9), "Game:")
+        self.addSign((x,10), "points:  " + str(game.status['points']))
+        self.addSign((x,11), "lifes:   " + str(game.status['lifes']))
+        self.addSign((x,12), "time:    " + str(game.time))
+        self.addSign((x,13), "objects: " + str(len(Object.objects)))
 
         #self.printGlass(x, 12, game.status["goodies"])
 
@@ -362,7 +367,7 @@ class UltraSonicController(Controller):
         global inp
 
         inp = ultraSonicInput
-        self.distPos    = (30, 100)
+        self.distPos    = (30, 80)
         inp.connect(serialPort)
         inp.start()
         super(UltraSonicController, self).__init__(screen, position)
@@ -541,6 +546,8 @@ class Game(object):
 
     def robotMessage(self,*bla):
         pass
+
+
 
 def main(s = None):
     global screen
