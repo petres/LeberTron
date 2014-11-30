@@ -47,12 +47,15 @@ def getFromFile(fileName):
 class Object(object):
     objects = []
     stdSpeed = 2
-    def __init__(self, game, coords = None, signs = None, speed = None, color = None):
+    def __init__(self, game, coords = None, signs = None, speed = None, color = None, signsArray = [], switchSignsTime = None):
         self.game   = game
         self.coords = coords
         self.signs  = signs
         self.color  = color
         self.startTime = game.time
+        self.signsArray = signsArray
+        self.switchSignsTime = switchSignsTime
+
 
         if speed is None:
             self.speed = random.randint(Object.stdSpeed/2, Object.stdSpeed*2)
@@ -60,6 +63,11 @@ class Object(object):
             self.speed = speed
 
         Object.objects.append(self)
+
+        if len(signsArray) > 0:
+            self.currentSigns = 0
+            self.signs = signsArray[0]
+
 
         self.info = {}
         self.info['maxHeight']  = len(signs)
@@ -71,7 +79,6 @@ class Object(object):
 
         self.info['maxWidth']   = max(tmp)
         self.info['rWidth']     = (self.info['maxWidth'] - 1)/2
-
 
 
     def setRandomXPos(self, output, y = None):
@@ -116,6 +123,7 @@ class Object(object):
 
     def draw(self, output):
         x, y = self.getMapCoords()
+
         if y > output.fieldSize[1] + self.info['rHeight']:
             Object.objects.remove(self)
             return
@@ -123,6 +131,12 @@ class Object(object):
         if y < -10:
             Object.objects.remove(self)
             return
+
+        if len(self.signsArray) > 0:
+            if self.game.time%self.switchSignsTime == 0:
+                self.currentSigns += 1
+                self.currentSigns = self.currentSigns%len(self.signsArray)
+                self.signs = self.signsArray[self.currentSigns]
 
         for i, line in enumerate(self.signs):
             py = y - self.info['rHeight'] + i
@@ -172,6 +186,7 @@ class Obstacle(Object):
             Obstacle.cSpaceship.play()
         self.game.lifeLost()
 
+
     def __init__(self, game, **args):
         if "signs" not in args:
             i = random.randint(0, len(Obstacle.obstacles) - 1)
@@ -188,7 +203,7 @@ class Goody(Object):
     def collision(self):
         if Goody.cSpaceship is not None:
             Goody.cSpaceship.play()
-        self.game.status['points'] = self.game.status['points'] + 5
+        self.game.status['count'] = self.game.status['count'] + 1
         self.game.status['goodies'].append(self.name)
         if self.game.robot is not None:
             self.game.robot.pourBottle(self.arduino, 10)
@@ -205,20 +220,45 @@ class Goody(Object):
 
 class SpaceShip(Object):
     design  = getFromFile("./objects/spaceShip.txt")
+    designArray = []
     color   = None
+    blinkColor = 2
     def __init__(self, game, **args):
         if "signs" not in args:
-            args["signs"] = getFromFile(self.design)
-            args["color"] = self.color
+            args["signs"] = getFromFile(SpaceShip.design)
+            signsArray = []
+            for design in SpaceShip.designArray:
+                signsArray.append(getFromFile(design))
+            args["signsArray"] = signsArray
+            args["color"] = SpaceShip.color
+            args["switchSignsTime"] = 10
+            self.switchBlinkTime = 8
+            self.switchBlinkDur = 50
+            self.blinking = False
         super(SpaceShip, self).__init__(game, **args)
 
     def getMapCoords(self):
         return (self.coords[0], self.coords[1])
 
     def check(self):
+        if self.blinking:
+            if self.blinkTime%self.switchBlinkTime == 0:
+                if self.blinkTime > self.switchBlinkDur:
+                    self.color = self.orgColor
+                    self.blinkColor = self.orgBlinkColor
+                    self.blinking = False
+                else:
+                    tmp = self.color
+                    self.color = self.blinkColor
+                    self.blinkColor = tmp
+            self.blinkTime += 1
         return
 
-
+    def blink(self):
+        self.orgColor = self.color
+        self.orgBlinkColor = self.blinkColor
+        self.blinkTime = 0
+        self.blinking = True
 
 
 
@@ -240,6 +280,8 @@ class Output(object):
         curses.use_default_colors()
         for i in range(0, curses.COLORS):
             curses.init_pair(i + 1, i, -1)
+
+        sys.stderr.write("Possible number of different colors: " + str(curses.COLORS) + "\n")
 
         y, x = screen.getmaxyx()
         y -= 3
@@ -293,11 +335,19 @@ class Output(object):
             self.addSign((x, 4), "shoot:   " + str(round(inp.shoot)))
             self.addSign((x, 5), "shoot d: " + str(round(inp.shootDist)))
 
-        self.addSign((x, 9), "Game:")
-        self.addSign((x,10), "points:  " + str(game.status['points']))
-        self.addSign((x,11), "lifes:   " + str(game.status['lifes']))
-        self.addSign((x,12), "time:    " + str(game.time))
-        self.addSign((x,13), "objects: " + str(len(Object.objects)))
+        self.addSign((x, 9), " Lifes")
+        for i, line in enumerate(getFromFile("./objects/lifes/" + str(game.status['lifes']) + ".txt")):
+            self.addSign((x, 10 + i), line)
+
+        x += 13
+
+        self.addSign((x, 9), " Count")
+        for i, line in enumerate(getFromFile("./objects/lifes/" + str(game.status['count']) + ".txt")):
+            self.addSign((x, 10 + i), line)
+        #self.addSign((x,10), "count:  " + str(game.status['count']))
+        #self.addSign((x,11), "lifes:   " + str(game.status['lifes']))
+        #self.addSign((x,12), "time:    " + str(game.time))
+        #self.addSign((x,13), "objects: " + str(len(Object.objects)))
 
         #self.printGlass(x, 12, game.status["goodies"])
 
@@ -461,7 +511,7 @@ class Game(object):
         self.countdown = 0
 
         self.status = {}
-        self.status['points']   = 0
+        self.status['count']   = 0
         self.status['goodies']  = []
         self.status['lifes']    = 3
 
@@ -474,7 +524,7 @@ class Game(object):
 
     def prepare(self):
         self.time   = 0
-        self.status['points']   = 0
+        self.status['count']   = 0
         self.status['goodies']  = []
         self.status['lifes']    = 3
         self.output.prepareGame()
@@ -561,6 +611,8 @@ class Game(object):
 
     def lifeLost(self):
         self.status['lifes'] = self.status['lifes'] - 1
+        #curses.init_pair(self.spaceShip.color, 3, -1)
+        self.spaceShip.blink()
         self.removeObjects()
         if self.status['lifes'] == 0:
             self.createObjects = False
@@ -609,6 +661,12 @@ def main(s = None):
 
     SpaceShip.color     = designConfig.getint('Spaceship', 'color')
     SpaceShip.design    = designConfig.get('Spaceship', 'file')
+
+    folder = os.path.join(designConfig.get('Spaceship', 'folder'), "")
+    if folder is not None:
+        for spaceshipDesign in glob.glob(folder + "*.txt"):
+            #sys.stderr.write(spaceshipDesign + "\n")
+            SpaceShip.designArray.append(spaceshipDesign)
 
     ingredientsFolder   = designConfig.get('Ingredients', 'folder')
     for nrGoody in range(1, designConfig.getint('Ingredients', 'count') + 1):
