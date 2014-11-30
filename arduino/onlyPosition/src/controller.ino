@@ -10,9 +10,7 @@ void setup() {
 
 void loop() {
     unsigned long duration;
-
     delay(40);
-
     digitalWrite(trigPin, HIGH);
     delayMicroseconds(10);
     digitalWrite(trigPin, LOW);
