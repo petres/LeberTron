@@ -160,6 +160,7 @@ class Shoot(Object):
     lastStartTime   = 0
     diffBetween     = 20
     def __init__(self, game, **args):
+        logging.debug("init Shoot")
         if Shoot.lastStartTime > game.time - Shoot.diffBetween:
             return
 
@@ -435,9 +436,8 @@ class Controller(object):
         self.position = position
 
     def getInput(self):
-        # raise NotImplementedError
-        c = self.screen.getch()
-        return None
+        # implemented by sub class
+        raise NotImplementedError
 
 
 class UltraSonicController(Controller):
@@ -554,7 +554,6 @@ class Game(object):
     def run(self):
         logging.info('Starting main loop...')
         while True:
-            logging.debug("time=%d" % self.time)
             d = self.controller.getInput()
 
             if d == Controller.QUIT:
@@ -637,7 +636,9 @@ class Game(object):
             Game.background.stopLoop()
 
     def lifeLost(self):
+        logging.info("you lost a life!")
         self.status['lifes'] = self.status['lifes'] - 1
+        logging.debug("status=%s" % self.status)
         #curses.init_pair(self.spaceShip.color, 3, -1)
         self.removeObjects()
         if self.status['lifes'] == 0:

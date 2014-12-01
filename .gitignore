@@ -1,6 +1,6 @@
 *.pyc
 *~
 js/node_modules/
-log/*.txt
+log/*
 .idea/
 .build
