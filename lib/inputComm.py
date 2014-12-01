@@ -16,7 +16,7 @@ assess different states
 class InputComm():
 
     def __init__(self, serialPort='/dev/tty.usbserial-A9WFF5LH',
-        sliding = False, slidingWindowSize = 3, transform = False,
+        sliding = False, slidingWindowSize = 3,
         twoSensors = False, shootMin = 5, shootMax = 20):
 
         self.exitFlag = False
@@ -35,7 +35,6 @@ class InputComm():
         self.serialConn = False
         self.readThread = False
 
-        self.transform = transform
         self.twoSensors = twoSensors
 
         try:
@@ -53,13 +52,13 @@ class InputComm():
         self.serialConn.close()
 
 
-    def doTheShoot(self, distance):
-        if self.shootMin <= distance <= self.shootMax:
+    def doTheShoot(self, shootDistance):
+        if self.shootMin <= shootDistance <= self.shootMax:
             self.shoot = True
         else:
             self.shoot = False
         
-    def doTheSlide(self, distance):
+    def doThePosition(self, distance):
         if 0 < distance < 100:
             self.slidingWindow.append(distance)
         if len(self.slidingWindow) >= self.slidingWindowSize:
@@ -76,31 +75,30 @@ class InputComm():
         while not self.exitFlag:
 
             # CURRENT POSITION
-            # import ipdb; ipdb.set_trace()
+
             try:
+                # Read Arduino
                 line = self.serialConn.readline().rstrip('\r\n')
                 logging.debug("LINE from Arduino: '%s'" % line)
 
                 if self.twoSensors:
                     vals = line.split(" ")
-                    distance = float(vals[0])
-                    shootDistance = float(vals[0])
-                    if self.transform:
-                        distance = self.transformVal(distance)
-                        shootDistance = self.transformVal(shootDistance)
+                    distance = vals[0]
+                    shootDistance = vals[0]
+                    shootDistance = self.transformVal(shootDistance)
+                    
+                    self.doTheShoot(shootDistance)
+
                 else: 
                     distance = float(line)
-                    if self.transform:
-                        distance = self.transform
+                    distance = self.transformVal(distance)
 
-                self.doTheSlide(distance)
-
-                # distanceAndShoot = self.readShootAndDistance(line)
-                # self.doTheShoot(shootDistance)
+                # Calculate current position with Sliding Window
+                self.doThePosition(distance)
 
                 print self.position
             except Exception, e:
-                raise e
+                continue
 
 
 if __name__ == '__main__':
