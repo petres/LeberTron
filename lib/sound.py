@@ -1,8 +1,12 @@
 import wave
 import time
 import logging
-import pyaudio
 import threading
+
+try:
+    import pyaudio
+except ImportError as e:
+    logging.warning(e.message)
 
 class Sound():
 
