@@ -1,13 +1,14 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+import os
 import sys
-import logging
+import glob
 import curses
 import locale
 import random
-import os
-import glob
+import logging
+import threading
 import time as timeLib
 from ConfigParser import SafeConfigParser
 
@@ -625,6 +626,7 @@ class Game(object):
 
     def end(self, status):
         logging.info("Ending game now (status=%s)" % status)
+        logging.debug("threads alive: %s" % threading.active_count())
         self.overlay = status
         self.removeObjects()
         logging.debug("clearing screen")
@@ -634,6 +636,8 @@ class Game(object):
         if Game.background is not None:
             logging.debug("Game.background.stopLoop()")
             Game.background.stopLoop()
+            logging.debug("background sound stopped successfully")
+        logging.debug("threads alive: %s" % threading.alive_count())
 
     def lifeLost(self):
         logging.info("you lost a life!")
