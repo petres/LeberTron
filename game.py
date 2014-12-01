@@ -637,7 +637,7 @@ class Game(object):
             logging.debug("Game.background.stopLoop()")
             Game.background.stopLoop()
             logging.debug("background sound stopped successfully")
-        logging.debug("Ending now, threads alive: %s" % threading.alive_count())
+        logging.debug("Ending now, threads alive: %s" % threading.active_count())
 
     def lifeLost(self):
         logging.info("you lost a life!")
