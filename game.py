@@ -154,14 +154,21 @@ class Object(object):
 class Shoot(Object):
     soundShooting   = None
     soundCollision  = None
-    startTime       = None
+    lastStartTime   = 0
+    diffBetween     = 20
     def __init__(self, game, **args):
+        if Shoot.lastStartTime > game.time - Shoot.diffBetween:
+            return
+
+        Shoot.lastStartTime = game.time
+
         args["signs"] = getFromFile("./objects/shoot.txt")
         args["color"] = 2
         args["speed"] = 1
         if Shoot.soundShooting is not None:
             Shoot.soundShooting.play()
         super(Shoot, self).__init__(game, **args)
+
 
     def getMapCoords(self):
         return (self.coords[0], self.coords[1] - (self.game.time - self.startTime)/self.speed)
@@ -199,14 +206,19 @@ class Obstacle(Object):
 class Goody(Object):
     types       = []
     cSpaceship  = None
+    portion     = 10
+    volume      = 100
 
     def collision(self):
         if Goody.cSpaceship is not None:
             Goody.cSpaceship.play()
-        self.game.status['count'] = self.game.status['count'] + 1
+        self.game.status['count'] += 1
+        self.game.status['ml']    += Goody.portion
         self.game.status['goodies'].append(self.name)
         if self.game.robot is not None:
-            self.game.robot.pourBottle(self.arduino, 10)
+            self.game.robot.pourBottle(self.arduino, Goody.portion)
+        if self.game.status['ml'] > Goody.volume:
+            self.game.full()
 
     def __init__(self, game, **args):
         if "signs" not in args:
@@ -352,15 +364,18 @@ class Output(object):
         #self.printGlass(x, 12, game.status["goodies"])
 
     def printCountdown(self, nr):
-        signs = getFromFile("./screens/countdown/" + str(nr) + ".txt")
-        w, h = (20, 16)
+        self.fieldCenteredOutput("./screens/countdown/" + str(nr) + ".txt")
+
+
+    def fieldCenteredOutput(self, file):
+        signs = getFromFile(file)
+        w, h = (len(signs[0]), len(signs))
         x, y = self.fieldSize
         bx = (x - w)/2
         by = (y - h)/2
         for i, line in enumerate(signs):
             ty = by + i
             self.addSign((bx, ty), line, True)
-
 
 
     def printGlass(self, x, y, goodies):
@@ -511,9 +526,8 @@ class Game(object):
         self.countdown = 0
 
         self.status = {}
-        self.status['count']   = 0
-        self.status['goodies']  = []
-        self.status['lifes']    = 3
+        self.setStartStatus()
+        self.overlay = None
 
 
     def removeObjects(self):
@@ -521,14 +535,20 @@ class Game(object):
             if not isinstance(o, SpaceShip):
                 Object.objects.remove(o)
 
+    def setStartStatus(self):
+        self.status['count']   = 0
+        self.status['goodies'] = []
+        self.status['lifes']   = 3
+        self.status['ml']      = 0
+
 
     def prepare(self):
         self.time   = 0
-        self.status['count']   = 0
-        self.status['goodies']  = []
-        self.status['lifes']    = 3
+        self.setStartStatus()
         self.output.prepareGame()
         self.countdown = 3
+        self.overlay = None
+        Shoot.lastStartTime = 0
         if Game.background is not None:
             Game.background.loop()
 
@@ -541,7 +561,7 @@ class Game(object):
             if d == Controller.QUIT:
                 break
             elif d == Controller.SHOOT:
-                o = Shoot(self, coords = (self.spaceShip.coords[0], self.spaceShip.coords[1] - self.spaceShip.info['rHeight']))
+                o = Shoot(self, coords = (self.spaceShip.coords[0], self.spaceShip.coords[1] - self.spaceShip.info['rHeight'] - 1))
 
             if d == Controller.RETRY:
                 self.prepare()
@@ -571,6 +591,7 @@ class Game(object):
 
             self.output.printGame(self)
 
+            # COUNTDOWN
             if self.countdown > 0:
                 self.output.printCountdown(self.countdown)
                 if self.time > Game.countdownTime:
@@ -579,7 +600,13 @@ class Game(object):
                     if self.countdown == 0:
                         self.createObjects = True
 
+            if self.overlay is not None:
+                if self.overlay == "overLifes":
+                    self.output.fieldCenteredOutput("./screens/full.txt")
+                elif self.overlay == "overFull":
+                    self.output.fieldCenteredOutput("./screens/full.txt")
 
+            # CREATE OBJECT
             if self.createObjects:
                 if self.time%60 == 0:
                     g = Goody(self)
@@ -592,34 +619,28 @@ class Game(object):
             self.time += 1
             timeLib.sleep(.03)
 
-        self.end()
+        self.end("quit")
 
+    def full(self):
+        self.end("overFull")
 
-    def end(self):
-        if Game.background is not None:
-            Game.background.stopLoop()
+    def end(self, status):
+        self.overlay = status
+        self.removeObjects()
         screen.clear()
         self.output.printField()
-        # screen.nodelay(0)
-        # c = screen.getch()
-        #
-        # if c == ord('r'):
-        #     self.prepare()
-        # else:
-        #     exit()
-        # screen.nodelay(1)
+        self.createObjects = False
+        if Game.background is not None:
+            Game.background.stopLoop()
 
     def lifeLost(self):
         self.status['lifes'] = self.status['lifes'] - 1
         #curses.init_pair(self.spaceShip.color, 3, -1)
-        self.spaceShip.blink()
         self.removeObjects()
         if self.status['lifes'] == 0:
-            self.createObjects = False
-            if Game.background is not None:
-                Game.background.stopLoop()
+            self.end("overLifes")
         else:
-            pass
+            self.spaceShip.blink()
 
     def robotMessage(self,*bla):
         pass
@@ -708,6 +729,8 @@ def main(s = None):
     robot = None
     robotConfig = SafeConfigParser()
     robotConfig.read('./etc/robot.cfg')
+    Goody.portion = robotConfig.getint('Mixing', 'portion')
+    Goody.volume = robotConfig.getint('Mixing', 'volume')
     if robotConfig.getboolean('Robot', 'enabled'):
         logFile = None
         if robotConfig.getboolean('Logging', 'enabled'):
