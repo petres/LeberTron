@@ -1,10 +1,13 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import sys, traceback
+import sys
 import logging
-import curses, locale
-import random, os, glob
+import curses
+import locale
+import random
+import os
+import glob
 import time as timeLib
 from ConfigParser import SafeConfigParser
 
@@ -14,8 +17,8 @@ dname = os.path.dirname(abspath)
 os.chdir(dname)
 
 # setup log file to subdir
-logging.basicConfig (filename='error.log', level=logging.DEBUG,
-                     format='%(levelname)8s - %(asctime)s: %(message)s')
+logging.basicConfig(filename='error.log', level=logging.DEBUG,
+                    format='%(levelname)8s - %(asctime)s: %(message)s')
 
 
 sys.path.append("./lib")
@@ -34,7 +37,7 @@ inp = None
 ################################################################################
 
 def getFromFile(fileName):
-    #f = codecs.open("./objects/" + fileName + ".txt", 'r', "utf-8")
+    # f = codecs.open("./objects/" + fileName + ".txt", 'r', "utf-8")
     f = open(fileName, 'r')
     content = f.read().decode('utf-8')
     signsArray = []
@@ -50,8 +53,9 @@ def getFromFile(fileName):
 class Object(object):
     objects = []
     stdSpeed = 2
-    def __init__(self, game, coords = None, signs = None, speed = None, color = None, signsArray = [], switchSignsTime = None):
-        self.game   = game
+
+    def __init__(self, game, coords=None, signs=None, speed=None, color=None, signsArray=[], switchSignsTime=None):
+        self.game = game
         self.coords = coords
         self.signs  = signs
         self.color  = color
@@ -59,9 +63,9 @@ class Object(object):
         self.signsArray = signsArray
         self.switchSignsTime = switchSignsTime
 
-
         if speed is None:
-            self.speed = random.randint(Object.stdSpeed/2, Object.stdSpeed*2)
+            self.speed = random.randint(
+                Object.stdSpeed / 2, Object.stdSpeed * 2)
         else:
             self.speed = speed
 
@@ -70,7 +74,6 @@ class Object(object):
         if len(signsArray) > 0:
             self.currentSigns = 0
             self.signs = signsArray[0]
-
 
         self.info = {}
         self.info['maxHeight']  = len(signs)
@@ -84,17 +87,18 @@ class Object(object):
         self.info['rWidth']     = (self.info['maxWidth'] - 1)/2
 
 
-    def setRandomXPos(self, output, y = None):
+    def setRandomXPos(self, output, y=None):
         if y is None:
             y = 0
-        x = random.randint(2 + self.info['rWidth'], output.fieldSize[0] - 2 - self.info['rWidth'])
+        x = random.randint(
+            2 + self.info['rWidth'], output.fieldSize[0] - 2 - self.info['rWidth'])
         self.coords = (x, y)
 
 
     def getPosArray(self):
         posArray = []
         x, y = self.getMapCoords()
-        #for i, width in enumerate(self.info["widths"]):
+        # for i, width in enumerate(self.info["widths"]):
         #    for j in range(width):
         #        posArray.append((x - (width - 1)/2 + j, y - self.info["rHeight"] + i))
         for i, line in enumerate(self.signs):
@@ -106,7 +110,6 @@ class Object(object):
 
         return posArray
 
-
     def check(self):
         if len(set(self.getPosArray()).intersection(self.game.spaceShip.getPosArray())) > 0:
             try:
@@ -115,14 +118,11 @@ class Object(object):
                 pass
             self.collision()
 
-
     def collision(self):
         pass
 
-
     def getMapCoords(self):
-        return (self.coords[0], self.coords[1] + (self.game.time - self.startTime)/self.speed)
-
+        return (self.coords[0], self.coords[1] + (self.game.time - self.startTime) / self.speed)
 
     def draw(self, output):
         x, y = self.getMapCoords()
@@ -136,9 +136,9 @@ class Object(object):
             return
 
         if len(self.signsArray) > 0:
-            if self.game.time%self.switchSignsTime == 0:
+            if self.game.time % self.switchSignsTime == 0:
                 self.currentSigns += 1
-                self.currentSigns = self.currentSigns%len(self.signsArray)
+                self.currentSigns = self.currentSigns % len(self.signsArray)
                 self.signs = self.signsArray[self.currentSigns]
 
         for i, line in enumerate(self.signs):
@@ -172,9 +172,8 @@ class Shoot(Object):
             Shoot.soundShooting.play()
         super(Shoot, self).__init__(game, **args)
 
-
     def getMapCoords(self):
-        return (self.coords[0], self.coords[1] - (self.game.time - self.startTime)/self.speed)
+        return (self.coords[0], self.coords[1] - (self.game.time - self.startTime) / self.speed)
 
     def check(self):
         for o in Object.objects:
@@ -257,7 +256,7 @@ class SpaceShip(Object):
 
     def check(self):
         if self.blinking:
-            if self.blinkTime%self.switchBlinkTime == 0:
+            if self.blinkTime % self.switchBlinkTime == 0:
                 if self.blinkTime > self.switchBlinkDur:
                     self.color = self.orgColor
                     self.blinkColor = self.orgBlinkColor
@@ -297,7 +296,7 @@ class Output(object):
             curses.init_pair(i + 1, i, -1)
 
         logging.warning("Possible number of different colors: %s" %
-                       curses.COLORS)
+                        curses.COLORS)
 
         y, x = screen.getmaxyx()
         y -= 3
@@ -312,19 +311,17 @@ class Output(object):
         screen.clear()
         self.printField()
 
-
     def printGame(self, game):
-        #screen.clear()
+        # screen.clear()
 
-        self.clearField(self.fieldPos, self.fieldSize, sign = " ")
-        self.clearField(self.statusPos, self.statusSize, sign = " ")
+        self.clearField(self.fieldPos, self.fieldSize, sign=" ")
+        self.clearField(self.statusPos, self.statusSize, sign=" ")
 
-        #self.printField()
+        # self.printField()
         self.printStatus(game)
 
         for o in list(Object.objects):
             o.draw(self)
-
 
     def printField(self):
         for i in range(self.fieldPos[0] - 1, self.fieldPos[0] + self.fieldSize[0] + 2):
@@ -332,14 +329,12 @@ class Output(object):
             self.addSign((i, self.fieldPos[1] + self.fieldSize[1] + 1), u"█")
 
         for i in range(self.fieldPos[1] - 1, self.fieldPos[1] + self.fieldSize[1] + 2):
-            self.addSign((self.fieldPos[0] - 1, i), u"█", color = None)
+            self.addSign((self.fieldPos[0] - 1, i), u"█", color=None)
             self.addSign((self.fieldPos[0] + self.fieldSize[0] + 1, i), u"█")
 
-
-    def clearField(self, pos, size, sign = " "):
+    def clearField(self, pos, size, sign=" "):
         for i in range(pos[1], pos[1] + size[1] + 1):
-            self.addSign((pos[0], i), sign*(size[0] + 1))
-
+            self.addSign((pos[0], i), sign * (size[0] + 1))
 
     def printStatus(self, game):
         x, y = self.statusPos
@@ -360,33 +355,31 @@ class Output(object):
         self.addSign((x, 9), " Count")
         for i, line in enumerate(getFromFile("./objects/lifes/" + str(game.status['count']) + ".txt")):
             self.addSign((x, 10 + i), line)
-        #self.addSign((x,10), "count:  " + str(game.status['count']))
-        #self.addSign((x,11), "lifes:   " + str(game.status['lifes']))
-        #self.addSign((x,12), "time:    " + str(game.time))
-        #self.addSign((x,13), "objects: " + str(len(Object.objects)))
+        # self.addSign((x,10), "count:  " + str(game.status['count']))
+        # self.addSign((x,11), "lifes:   " + str(game.status['lifes']))
+        # self.addSign((x,12), "time:    " + str(game.time))
+        # self.addSign((x,13), "objects: " + str(len(Object.objects)))
 
-        #self.printGlass(x, 12, game.status["goodies"])
+        # self.printGlass(x, 12, game.status["goodies"])
 
     def printCountdown(self, nr):
         self.fieldCenteredOutput("./screens/countdown/" + str(nr) + ".txt")
-
 
     def fieldCenteredOutput(self, file):
         signs = getFromFile(file)
         w, h = (len(signs[0]), len(signs))
         x, y = self.fieldSize
-        bx = (x - w)/2
-        by = (y - h)/2
+        bx = (x - w) / 2
+        by = (y - h) / 2
         for i, line in enumerate(signs):
             ty = by + i
             self.addSign((bx, ty), line, True)
 
-
     def printGlass(self, x, y, goodies):
-        top    = getFromFile("./objects/glass/top.txt")
+        top = getFromFile("./objects/glass/top.txt")
         bottom = getFromFile("./objects/glass/bottom.txt")
 
-        body    = []
+        body = []
         h = max(6, len(goodies))
         for i in range(h, -1, -1):
             if i > len(goodies) or len(goodies) == 0:
@@ -403,15 +396,15 @@ class Output(object):
             y += 1
             self.addSign((x, y), l)
 
-
-    def addSign(self, coords, sign, field = False, color = None):
+    def addSign(self, coords, sign, field=False, color=None):
         x, y = coords
         if field:
             x += self.fieldPos[0]
             y += self.fieldPos[1]
         try:
             if color:
-                screen.addstr(y, x, sign.encode('utf_8'), curses.color_pair(color))
+                screen.addstr(
+                    y, x, sign.encode('utf_8'), curses.color_pair(color))
             else:
                 screen.addstr(y, x, sign.encode('utf_8'))
         except:
@@ -442,13 +435,14 @@ class Controller(object):
         self.position = position
 
     def getInput(self):
-        #raise NotImplementedError
+        # raise NotImplementedError
         c = self.screen.getch()
         return None
 
 
 class UltraSonicController(Controller):
-    def __init__(self, serialPort, screen, position = False):
+
+    def __init__(self, serialPort, screen, position=False):
         import inputComm as ultraSonicInput
         global inp
         inp = ultraSonicInput
@@ -469,7 +463,7 @@ class UltraSonicController(Controller):
             return Controller.SHOOT
 
         if self.position:
-            return float(inp.curr - self.distPos[0])/(self.distPos[1] - self.distPos[0])
+            return float(inp.curr - self.distPos[0]) / (self.distPos[1] - self.distPos[0])
 
         if inp.state == -1:
             return Controller.LEFT
@@ -484,8 +478,8 @@ class UltraSonicController(Controller):
     #     float(inp.curr - self.distPos[0])/(self.distPos[1] - self.distPos[0])
 
 
-
 class KeyboardController(Controller):
+
     def __init__(self, screen, position):
         super(KeyboardController, self).__init__(screen, position)
 
@@ -507,7 +501,6 @@ class KeyboardController(Controller):
         #     return float(value - 1)/8
         # except ValueError:
 
-
         return None
 
 
@@ -521,19 +514,19 @@ class Game(object):
     createObjects = False
     countdownTime = 30
 
-    def __init__(self, controller, output, robot = None):
-        self.time   = 0
+    def __init__(self, controller, output, robot=None):
+        self.time = 0
         self.controller = controller
         self.output     = output
         self.robot      = robot
         self.spaceShip = SpaceShip(self)
-        self.spaceShip.coords = (self.output.fieldSize[0]/2, self.output.fieldSize[1] - 2)
+        self.spaceShip.coords = (
+            self.output.fieldSize[0] / 2, self.output.fieldSize[1] - 2)
         self.countdown = 0
 
         self.status = {}
         self.setStartStatus()
         self.overlay = None
-
 
     def removeObjects(self):
         for o in list(Object.objects):
@@ -556,8 +549,6 @@ class Game(object):
         Shoot.lastStartTime = 0
         if Game.background is not None:
             Game.background.loop()
-
-
 
     def run(self):
         while True:
@@ -613,10 +604,10 @@ class Game(object):
 
             # CREATE OBJECT
             if self.createObjects:
-                if self.time%60 == 0:
+                if self.time % 60 == 0:
                     g = Goody(self)
                     g.setRandomXPos(self.output)
-                if self.time%40 == 0:
+                if self.time % 40 == 0:
                     o = Obstacle(self)
                     o.setRandomXPos(self.output)
                     #pass
@@ -647,12 +638,11 @@ class Game(object):
         else:
             self.spaceShip.blink()
 
-    def robotMessage(self,*bla):
+    def robotMessage(self, *bla):
         pass
 
 
-
-def main(s = None):
+def main(s=None):
     global screen
     screen = s
     screen.nodelay(1)

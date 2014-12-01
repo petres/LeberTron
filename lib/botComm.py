@@ -7,158 +7,150 @@ Provide listener thread
 Disconnect gracefully
 
 """
-import sys, serial, threading, time
+import sys
+import serial
+import threading
+import time
 import logging
 from Queue import Queue
 
 
 class BotComm(object):
-	def __init__(self, serialPort, listenCallback):
-		self.exitFlag 	= False
-		self.ready 		= False
-		self.pouring	= False
-		self.pourQueue	= Queue()
 
-		try:
-			self.serialConn 	= serial.Serial(port = serialPort, timeout = 0)
-			self.listenCallback = listenCallback
-			self.listenThread 	= threading.Thread(target = self.callbackWrapper)
-			self.listenThread.start()
-		except:
-			logging.exception('ups, something went wrong')
+    def __init__(self, serialPort, listenCallback):
+        self.exitFlag = False
+        self.ready = False
+        self.pouring = False
+        self.pourQueue = Queue()
 
+        try:
+            self.serialConn = serial.Serial(port=serialPort, timeout=0)
+            self.listenCallback = listenCallback
+            self.listenThread = threading.Thread(
+                target=self.callbackWrapper)
+            self.listenThread.start()
+        except:
+            logging.exception('ups, something went wrong')
 
+    def close(self):
+        self.exitFlag = True
+        logging.info("INFO: Waiting for botComm listen thread ... ")
+        self.listenThread.join()
+        logging.info("DONE" + "\n")
+        # time.sleep(0.2)
+        self.serialConn.close()
 
+    def callbackWrapper(self):
+        serialBuffer = ""
+        while not self.exitFlag:
+            try:
+                serialBuffer += self.serialConn.read(1)
+                if (serialBuffer.endswith("\r\n")):
+                    command = serialBuffer.rstrip("\r\n")
+                    logging.debug('R %s \\r\\n' % command)
+                    serialBuffer = ""
 
+                    commandList = command.split(" ")
 
-	def close(self):
-		self.exitFlag = True
-		logging.info("INFO: Waiting for botComm listen thread ... ")
-		self.listenThread.join()
-		logging.info("DONE" + "\n")
-		# time.sleep(0.2)
-		self.serialConn.close()
+                    if commandList[0] == "READY":
+                        if int(commandList[2]) == 1:
+                            if self.pouring == False:
+                                self.ready = True
 
-	def callbackWrapper(self):
-		serialBuffer = ""
-		while not self.exitFlag:
-			try:
-				serialBuffer += self.serialConn.read(1)
-				if (serialBuffer.endswith("\r\n")):
-					command = serialBuffer.rstrip("\r\n")
-					logging.debug('R %s \\r\\n' % command )
-					serialBuffer = ""
+                    elif commandList[0] == "WAITING_FOR_CUP":
+                        pass
+                    elif commandList[0] == "POURING":
+                        pass
+                    elif commandList[0] == "ENJOY":
+                        self.pouring = False
+                        pass
+                    elif commandList[0] == "ERROR":
+                        pass
+                    elif commandList[0] == "NOP":
+                        pass
+                    else:
+                        pass
 
-					commandList = command.split(" ")
+                    self.listenCallback(command)
 
-					if commandList[0] == "READY":
-						if int(commandList[2]) == 1:
-							if self.pouring == False:
-								self.ready = True
+                    if not self.pourQueue.empty() and self.ready:
+                        self.pour(*self.pourQueue.get())
 
-					elif commandList[0] == "WAITING_FOR_CUP":
-						pass
-					elif commandList[0] == "POURING":
-						pass
-					elif commandList[0] == "ENJOY":
-						self.pouring = False
-						pass
-					elif commandList[0] == "ERROR":
-						pass
-					elif commandList[0] == "NOP":
-						pass
-					else:
-						pass
+            except Exception as e:
+                logging.info(str(e) + '\n')
+                continue
 
-					self.listenCallback(command)
+    def send(self, verb, *args):
+        try:
+            messageString = verb + " " + " ".join(str(n) for n in args)
+            self.serialConn.write(messageString + '\r\n')
+            logging.debug("T %s \\r\\n" % messageString)
+            self.serialConn.flushInput()
+        except Exception as e:
+            logging.info(str(e) + '\n')
 
-					if not self.pourQueue.empty() and self.ready:
-						self.pour(*self.pourQueue.get())
+    def pourBottle(self, bottleNr, amount):
+        temp = [0] * 7
+        temp[bottleNr] = amount
+        self.pourQueue.put(temp)
+        # self.pour(*temp)
 
-
-			except Exception as e:
-				logging.info(str(e) + '\n')
-				continue
-
-
-	def send(self, verb, *args):
-		try:
-			messageString = verb + " " + " ".join(str(n) for n in args)
-			self.serialConn.write(messageString + '\r\n')
-			logging.debug("T %s \\r\\n" % messageString )
-			self.serialConn.flushInput()
-		except Exception as e:
-			logging.info(str(e) + '\n')
-
-
-	def pourBottle(self, bottleNr, amount):
-		temp = [0] * 7
-		temp[bottleNr] = amount
-		self.pourQueue.put(temp)
-		#self.pour(*temp)
-
-
-	def pour(self, *args):
-		logging.info("INFO: SEND POUR COMMAND (" + " ".join(str(n) for n in args) + ")")
-		"""pour x_i grams of ingredient i, for i=1..n; will skip bottle
+    def pour(self, *args):
+        logging.info(
+            "INFO: SEND POUR COMMAND (" + " ".join(str(n) for n in args) + ")")
+        """pour x_i grams of ingredient i, for i=1..n; will skip bottle
 		if x_n < UPRIGHT_OFFSET"""
-		# TODO: Check if ready for pour
-		#from time import sleep
-		#sleep(5)
-		self.send("POUR", *args)
-		self.ready = False
-		self.pouring = True
+        # TODO: Check if ready for pour
+        # from time import sleep
+        # sleep(5)
+        self.send("POUR", *args)
+        self.ready = False
+        self.pouring = True
 
+    def abort(self):
+        """abort current cocktail"""
+        self.send("ABORT")
 
-	def abort(self):
-		"""abort current cocktail"""
-		self.send("ABORT")
+    def resume(self):
+        """resume after BOTTLE_EMPTY error, use this command when
+        bottle is refilled"""
+        self.send("RESUME")
 
+    def dance(self):
+        """let the bottles dance!"""
+        self.send("DANCE")
 
-	def resume(self):
-		"""resume after BOTTLE_EMPTY error, use this command when
-		bottle is refilled"""
-		self.send("RESUME")
+    def tare(self):
+        """sets scale to 0, make sure nothing is on scale when
+        sending this command Note: taring is deleled, when Arduino
+        is reseted (e.g. on lost serial connection)"""
+        self.send("TARE")
 
+    def turn(self, bottle_nr, microseconds):
+        """turns a bottle (numbered from 0 to 6) to a position
+        given in microseconds"""
+        self.send("TURN")
 
-	def dance(self):
-		"""let the bottles dance!"""
-		self.send("DANCE")
+    def echo(self, msg):
+        """Example: ECHO ENJOY\r\n Arduino will then print "ENJOY"
+        This is a workaround to resend garbled messages manually."""
+        self.send("ECHO", msg)
 
-
-	def tare(self):
-		"""sets scale to 0, make sure nothing is on scale when
-		sending this command Note: taring is deleled, when Arduino
-		is reseted (e.g. on lost serial connection)"""
-		self.send("TARE")
-
-
-	def turn(self, bottle_nr, microseconds):
-		"""turns a bottle (numbered from 0 to 6) to a position
-		given in microseconds"""
-		self.send("TURN")
-
-
-	def echo(self, msg):
-		"""Example: ECHO ENJOY\r\n Arduino will then print "ENJOY"
-		This is a workaround to resend garbled messages manually."""
-		self.send("ECHO", msg)
-
-
-	def nop(self):
-		"""Arduino will do nothing and send message "DOING_NOTHING".
-		This is a dummy message, for testing only."""
-		self.send("NOP")
+    def nop(self):
+        """Arduino will do nothing and send message "DOING_NOTHING".
+        This is a dummy message, for testing only."""
+        self.send("NOP")
 
 
 if __name__ == '__main__':
-	def youGotMsg(msg):
-		print msg
+    def youGotMsg(msg):
+        print msg
 
-	c = BotComm('/dev/tty.usbmodem621', youGotMsg)
-	while True:
-		if c.ready:
-			print "Ready"
-			c.pour(str(10), str(10), str(10), str(10), str(10), str(10), str(10))
+    c = BotComm('/dev/tty.usbmodem621', youGotMsg)
+    while True:
+        if c.ready:
+            print "Ready"
+            c.pour(str(10), str(10), str(10),
+                   str(10), str(10), str(10), str(10))
 
-		# time.sleep(0.2)
+        # time.sleep(0.2)
