@@ -599,7 +599,7 @@ class Game(object):
 
             if self.overlay is not None:
                 if self.overlay == "overLifes":
-                    self.output.fieldCenteredOutput("./screens/full.txt")
+                    self.output.fieldCenteredOutput("./screens/lifes.txt")
                 elif self.overlay == "overFull":
                     self.output.fieldCenteredOutput("./screens/full.txt")
 
