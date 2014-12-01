@@ -13,90 +13,106 @@ keep track of states
 assess different states
 """
 
+class InputComm():
 
-SLIDING = True
-SLIDING_WINDOW_SIZE = 15
+    def __init__(self, serialPort='/dev/tty.usbserial-A9WFF5LH', sliding = True,
+        slidingWindowSize = 3, twoSensors = False, shootMin = 5, shootMax = 20):
 
+        self.exitFlag = False
+        self.sliding = sliding
 
-# if there is an object between, we shoot
-SHOOT_MIN = 5
-SHOOT_MAX = 20
+        self.slidingWindow = deque()
+        self.slidingWindowSize = slidingWindowSize
 
-state = 0
-curr = 0
-currA = 0
-shoot = False
-shootDist = 0
+        self.shoot = False
+        self.shootMin = shootMin
+        self.shootMax = shootMax
 
+        # -1: left | 0: idle | 1: right
+        self.state = 0
+        
+        self.position = 0
 
-def inputRead():
-    global curr, state, currA, shoot
-
-    sliding_window = deque()
-
-    prevState = 0
-    while not exitFlag:
-        # CURRENT POSITION
-        # import ipdb; ipdb.set_trace()
-        line = serialConn.readline().rstrip('\r\n')
-        distances = line.split(" ")
-        logging.debug("LINE from Arduino: '%s'" % line)
-        try:
-            currA = float(distances[0]) / 90 * 2
-        except ValueError:
-            logging.warning("Could not read distance[0] from Arduino")
-            continue
-
-        logging.info("Received distances: " + str(distances))
+        self.twoSensors = twoSensors
 
         try:
-            shootDist = float(distances[1]) / 90 * 2
-        except ValueError:
-            logging.warning("Could not read distance[1] from Arduino")
-            shootDist = 0
+            self.serialConn = serial.Serial(serialPort, 9600)
+            self.readThread = threading.Thread(target=self.readInputCallback)
+            self.readThread.start()
+        except Exception, e:
+            raise e
 
-        if SLIDING:
-            if 0 < currA < 100:
-                sliding_window.append(currA)
-            if len(sliding_window) >= SLIDING_WINDOW_SIZE:
-                sliding_window.popleft()
-            if len(sliding_window) == 0:
-                curr = 0
-            else:
-                curr = sum(sliding_window) / len(sliding_window)
+    def close(self):
+        self.exitFlag = True
+        logging.info("INFO: Waiting for inputComm listen thread ... ")
+        self.readThread.join()
+        logging.info("DONE" + "\n")
+        self.serialConn.close()
 
-        if SHOOT_MIN <= shootDist <= SHOOT_MAX:
-            shoot = True
+    def doTheShoot(self, shootDistance):
+        if self.shootMin <= shootDistance <= self.shootMax:
+            self.shoot = True
         else:
-            shoot = False
+            self.shoot = False
+        
+    def doThePosition(self, distance):
+        if 0 < distance < 100:
+            self.slidingWindow.append(distance)
 
-    serialConn.close()
+        if len(self.slidingWindow) >= self.slidingWindowSize:
+            self.slidingWindow.popleft()
+
+        if len(self.slidingWindow) == 0:
+            self.position = 0
+        else:
+            self.position = sum(self.slidingWindow) / len(self.slidingWindow)
+
+    # def doThePosition2(self, distance):
 
 
-def start():
-    threadRead.start()
+    def transformVal(self, serialInput):
+        return float(serialInput) / 90 * 2
 
-# Init Threads
-threadRead = threading.Thread(target=inputRead)
-exitFlag = 0  # Exit main
+    def readInputCallback(self):
+        while not self.exitFlag:
 
-# Init Serial Connections
-serialConn = None
+            # CURRENT POSITION
 
-# def connect(serialPort = '/dev/ttyACM0'):
+            try:
+                # Read Arduino
+                line = self.serialConn.readline().rstrip('\r\n')
+                # logging.debug("LINE from Arduino: '%s'" % line)
 
+                if self.twoSensors:
+                    vals = line.split(" ")
+                    distance = vals[0]
+                    shootDistance = vals[0]
+                    shootDistance = self.transformVal(shootDistance)
 
-def connect(serialPort='/dev/tty.usbserial-A9WFF5LH'):
-    global serialConn
-    serialConn = serial.Serial(serialPort, 9600)
+                    self.doTheShoot(shootDistance)
+
+                else: 
+                    distance = float(line)
+                    distance = self.transformVal(distance)
+
+                # Calculate current position with Sliding Window
+                if self.sliding:
+                    self.doThePosition(distance)
+                else:
+                    self.position = distance
+
+                logging.debug("Slided Position from Arduino: '%s'" % self.position)
+            except Exception, e:
+                logging.error("Problem in Arduino Read: '%s'" % str(e))
+                continue
+
 
 if __name__ == '__main__':
-    connect(serialPort='/dev/ttyACM0')
-    start()
+
+    s = InputComm(slidingWindowSize = 3)
+
     try:
         while True:
             time.sleep(0.2)
     except KeyboardInterrupt:
-        exitFlag = 1
-        threadRead.join()
-        # print "Ciao..."
+        s.close()
