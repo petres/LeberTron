@@ -1,13 +1,13 @@
-import pyaudio
 import wave
 import time
-import sys
+import logging
+import pyaudio
 import threading
-
 
 class Sound():
 
     def __init__(self, path='sounds/peng.wav'):
+        logging.debug("init sound object %s" % path)
         self.p = pyaudio.PyAudio()
         self.wf = wave.open(path, 'rb')
         self.stream = self.p.open(
@@ -47,6 +47,7 @@ class Sound():
 
     def stop(self):
         if not self.stream.is_stopped():
+            logging.debug("stopping stream")
             self.stream.stop_stream()
 
     def loop(self):
@@ -54,9 +55,12 @@ class Sound():
         self.loopThread.start()
 
     def stopLoop(self):
+        logging.debug("stopping loop of sound object")
         if self.loopThread:
             self.loopExit = True
+            logging.debugging("stopping sound: join thread")
             self.loopThread.join()
+            logging.debugging("joined")
             time.sleep(0.3)
         self.stop()
         self.loopThread = False
