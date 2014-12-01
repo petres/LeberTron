@@ -463,20 +463,17 @@ class UltraSonicController(Controller):
         if inp.shoot:
             return Controller.SHOOT
 
-        if self.position:
-            return float(inp.curr - self.distPos[0]) / (self.distPos[1] - self.distPos[0])
-
         if inp.state == -1:
             return Controller.LEFT
         elif inp.state == 1:
             return Controller.RIGHT
 
-        return None
+    def getPosition(self):
+        assert self.position, "no position available"
+        return float(inp.curr - self.distPos[0]) / (self.distPos[1] - self.distPos[0])
 
     def close(self):
         inp.exitFlag = 1
-    # def getPosition(self):
-    #     float(inp.curr - self.distPos[0])/(self.distPos[1] - self.distPos[0])
 
 
 class KeyboardController(Controller):
@@ -516,18 +513,18 @@ class Game(object):
     countdownTime = 30
 
     def __init__(self, controller, output, robot=None):
-        self.time = 0
+        self.time       = 0
         self.controller = controller
         self.output     = output
         self.robot      = robot
-        self.spaceShip = SpaceShip(self)
+        self.spaceShip  = SpaceShip(self)
         self.spaceShip.coords = (
             self.output.fieldSize[0] / 2, self.output.fieldSize[1] - 2)
-        self.countdown = 0
+        self.countdown  = 0
 
-        self.status = {}
+        self.status     = {}
         self.setStartStatus()
-        self.overlay = None
+        self.overlay    = None
 
     def removeObjects(self):
         logging.debug("removing objects")
@@ -575,7 +572,7 @@ class Game(object):
                 x = self.spaceShip.coords[0]
                 x += m * self.moveStepSize
             else:
-                x = int(d*self.output.fieldSize[0])
+                x = int(self.controller.getPosition() * self.output.fieldSize[0])
 
             # CHECK MARGINS
             if x > self.output.fieldSize[0] - self.spaceShip.info['rWidth'] - 1:
@@ -714,10 +711,10 @@ def main(s=None):
     controllerConfig.read('./etc/controller.cfg')
     position = False
     if controllerConfig.get('Controller', 'type') == "keyboard":
-        c = KeyboardController(screen, position)
+        controller = KeyboardController(screen, position)
     else:
         position = controllerConfig.getboolean('UltraSonic', 'position')
-        c = UltraSonicController(controllerConfig.get('UltraSonic', 'serialPort'), screen, position)
+        controller = UltraSonicController(controllerConfig.get('UltraSonic', 'serialPort'), screen, position)
 
 
 
@@ -731,7 +728,7 @@ def main(s=None):
     # Robot Config
     ############################################################################
 
-    g = Game(controller = c, output = o)
+    g = Game(controller=controller, output=o)
 
     robot = None
     robotConfig = SafeConfigParser()
