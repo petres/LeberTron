@@ -16,24 +16,20 @@ assess different states
 class InputComm():
 
     def __init__(self, serialPort='/dev/tty.usbserial-A9WFF5LH',
-        sliding = False, slidingWindowSize = 3,
-        twoSensors = False, shootMin = 5, shootMax = 20):
+        slidingWindowSize = 3, twoSensors = False, shootMin = 5, shootMax = 20):
 
         self.exitFlag = False
+
         self.slidingWindow = deque()
         self.slidingWindowSize = slidingWindowSize
 
-        # if there is an object between, we shoot
-        self.shoot = False
         self.shootMin = shootMin
         self.shootMax = shootMax
 
         # -1: left | 0: idle | 1: right
-        self.state = 0
+        # self.state = 0
+        
         self.position = 0
-
-        self.serialConn = False
-        self.readThread = False
 
         self.twoSensors = twoSensors
 
@@ -51,7 +47,6 @@ class InputComm():
         logging.info("DONE" + "\n")
         self.serialConn.close()
 
-
     def doTheShoot(self, shootDistance):
         if self.shootMin <= shootDistance <= self.shootMax:
             self.shoot = True
@@ -61,12 +56,17 @@ class InputComm():
     def doThePosition(self, distance):
         if 0 < distance < 100:
             self.slidingWindow.append(distance)
+
         if len(self.slidingWindow) >= self.slidingWindowSize:
             self.slidingWindow.popleft()
+
         if len(self.slidingWindow) == 0:
             self.position = 0
         else:
             self.position = sum(self.slidingWindow) / len(self.slidingWindow)
+
+    def doThePosition2(self, distance):
+
 
     def transformVal(self, serialInput):
         return float(serialInput) / 90 * 2
@@ -86,7 +86,7 @@ class InputComm():
                     distance = vals[0]
                     shootDistance = vals[0]
                     shootDistance = self.transformVal(shootDistance)
-                    
+
                     self.doTheShoot(shootDistance)
 
                 else: 
@@ -94,7 +94,10 @@ class InputComm():
                     distance = self.transformVal(distance)
 
                 # Calculate current position with Sliding Window
-                self.doThePosition(distance)
+                if self.sliding:
+                    self.doThePosition(distance)
+                else:
+                    self.position = distance
 
                 print self.position
             except Exception, e:
@@ -103,7 +106,7 @@ class InputComm():
 
 if __name__ == '__main__':
 
-    s = InputComm()
+    s = InputComm(slidingWindowSize = 3)
 
     try:
         while True:
