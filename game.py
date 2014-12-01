@@ -746,8 +746,8 @@ def main(s=None):
     if robot is not None:
         robot.close()
     # Cleaning Up
-    if isinstance(c, UltraSonicController):
-        c.close()
+    if isinstance(controller, UltraSonicController):
+        controller.close()
         timeLib.sleep(0.3)
 
     screen.refresh()
