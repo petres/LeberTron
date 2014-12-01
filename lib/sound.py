@@ -49,6 +49,7 @@ class Sound():
         if not self.stream.is_stopped():
             logging.debug("stopping stream")
             self.stream.stop_stream()
+            logging.debug("stream stopped")
 
     def loop(self):
         self.loopThread = threading.Thread(target=self.loopCallback)
@@ -58,13 +59,14 @@ class Sound():
         logging.debug("stopping loop of sound object")
         if self.loopThread:
             self.loopExit = True
-            logging.debugging("stopping sound: join thread")
+            logging.debug("stopping sound: join thread")
             self.loopThread.join()
-            logging.debugging("joined")
+            logging.debug("joined")
             time.sleep(0.3)
         self.stop()
         self.loopThread = False
         self.loopExit = False
+        logging.debug("end stopLoop")
 
 
 if __name__ == '__main__':
