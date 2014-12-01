@@ -1,5 +1,6 @@
 from collections import deque
 import serial, threading, time, sys
+import logging
 
 
 """
@@ -35,13 +36,13 @@ def inputRead():
 		#import ipdb; ipdb.set_trace()
 		line = serialConn.readline().rstrip('\r\n')
 		distances = line.split(" ")
-		#sys.stderr.write("LINE from Arduino: '%s'" %line)
+		logging.debug("LINE from Arduino: '%s'" %line)
 		try:
 			currA = float(distances[0])/90*2
 		except ValueError as e:
 			continue
 
-		sys.stderr.write("Received: " + str(distances) + "\n")
+		logging.info("Received distances: " + str(distances))
 
 		try:
 			shootDist = float(distances[1])/90*2

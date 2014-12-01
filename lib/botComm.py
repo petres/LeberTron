@@ -8,47 +8,36 @@ Disconnect gracefully
 
 """
 import sys, serial, threading, time
+import logging
 from Queue import Queue
 
 
 class BotComm(object):
-	def __init__(self, serialPort, listenCallback, logFile = None):
+	def __init__(self, serialPort, listenCallback):
 		self.exitFlag 	= False
 		self.ready 		= False
 		self.pouring	= False
-		self.logFile	= None
 		self.pourQueue	= Queue()
-
-		if logFile is not None:
-			sys.stderr.write("INFO: Open Logfile " + logFile + "\n")
-			self.logFile = open(logFile, 'w', buffering = 0)
 
 		try:
 			self.serialConn 	= serial.Serial(port = serialPort, timeout = 0)
 			self.listenCallback = listenCallback
 			self.listenThread 	= threading.Thread(target = self.callbackWrapper)
 			self.listenThread.start()
-		except Exception as e:
-			sys.stderr.write(str(e) + '\n')
+		except:
+			logging.exception('ups, something went wrong')
 
 
 
-
-	def log(self, prefix, message):
-		if self.logFile is not None:
-			self.logFile.write(prefix + ": " + message + "\n")
 
 
 	def close(self):
 		self.exitFlag = True
-		sys.stderr.write("INFO: Waiting for botComm listen thread ... ")
+		logging.info("INFO: Waiting for botComm listen thread ... ")
 		self.listenThread.join()
-		sys.stderr.write("DONE" + "\n")
+		logging.info("DONE" + "\n")
 		# time.sleep(0.2)
 		self.serialConn.close()
-		if self.logFile is not None:
-			self.logFile.close()
-
 
 	def callbackWrapper(self):
 		serialBuffer = ""
@@ -57,7 +46,7 @@ class BotComm(object):
 				serialBuffer += self.serialConn.read(1)
 				if (serialBuffer.endswith("\r\n")):
 					command = serialBuffer.rstrip("\r\n")
-					self.log("R", command + '\\r\\n')
+					logging.debug('R %s \\r\\n' % command )
 					serialBuffer = ""
 
 					commandList = command.split(" ")
@@ -88,20 +77,18 @@ class BotComm(object):
 
 
 			except Exception as e:
-				sys.stderr.write(str(e) + '\n')
+				logging.info(str(e) + '\n')
 				continue
-			# finally:
-			# 	time.sleep(0.1)
 
 
 	def send(self, verb, *args):
 		try:
 			messageString = verb + " " + " ".join(str(n) for n in args)
 			self.serialConn.write(messageString + '\r\n')
-			self.log("T", messageString + '\\r\\n')
+			logging.debug("T %s \\r\\n" % messageString )
 			self.serialConn.flushInput()
 		except Exception as e:
-			sys.stderr.write(str(e) + '\n')
+			logging.info(str(e) + '\n')
 
 
 	def pourBottle(self, bottleNr, amount):
@@ -112,7 +99,7 @@ class BotComm(object):
 
 
 	def pour(self, *args):
-		sys.stderr.write("INFO: SEND POUR COMMAND (" + " ".join(str(n) for n in args) + ")")
+		logging.info("INFO: SEND POUR COMMAND (" + " ".join(str(n) for n in args) + ")")
 		"""pour x_i grams of ingredient i, for i=1..n; will skip bottle
 		if x_n < UPRIGHT_OFFSET"""
 		# TODO: Check if ready for pour

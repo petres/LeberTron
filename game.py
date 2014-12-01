@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import sys, traceback
+import logging
 import curses, locale
 import random, os, glob
 import time as timeLib
@@ -12,8 +13,10 @@ abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
 os.chdir(dname)
 
-# Redirect error messages
-sys.stderr = open('./log/error.txt', 'w', buffering = 0)
+# setup log file to subdir
+logging.basicConfig (filename='error.log', level=logging.DEBUG,
+                     format='%(levelname)8s - %(asctime)s: %(message)s')
+
 
 sys.path.append("./lib")
 
@@ -293,7 +296,8 @@ class Output(object):
         for i in range(0, curses.COLORS):
             curses.init_pair(i + 1, i, -1)
 
-        sys.stderr.write("Possible number of different colors: " + str(curses.COLORS) + "\n")
+        logging.warning("Possible number of different colors: %s" %
+                       curses.COLORS)
 
         y, x = screen.getmaxyx()
         y -= 3
@@ -410,15 +414,16 @@ class Output(object):
                 screen.addstr(y, x, sign.encode('utf_8'), curses.color_pair(color))
             else:
                 screen.addstr(y, x, sign.encode('utf_8'))
-        except Exception as e:
-            print >> sys.stderr, "terminalSize:", screen.getmaxyx()
-            print >> sys.stderr, "fieldPos:", self.fieldPos
-            print >> sys.stderr, "fieldSize:", self.fieldSize
-            print >> sys.stderr, "error writing sign to:", x, y
-            print >> sys.stderr, traceback.format_exc()
+        except:
+            logging.debug("terminalSize: %s" % screen.getmaxyx())
+            logging.debug("fieldPos: %s" % self.fieldPos)
+            logging.debug("fieldSize: %s" % self.fieldSize)
+            logging.debug("error writing sign to: %s" % x, y)
+            logging.exception()
 
+            # FIXME what does this sleep? do we really need to block for 2min?
             timeLib.sleep(120)
-            exit();
+            raise
 
 
 ################################################################################
@@ -686,7 +691,7 @@ def main(s = None):
     folder = os.path.join(designConfig.get('Spaceship', 'folder'), "")
     if folder is not None:
         for spaceshipDesign in glob.glob(folder + "*.txt"):
-            #sys.stderr.write(spaceshipDesign + "\n")
+            #logging.debug("spaceshipDesign %s" % spaceshipDesign)
             SpaceShip.designArray.append(spaceshipDesign)
 
     ingredientsFolder   = designConfig.get('Ingredients', 'folder')
@@ -732,11 +737,7 @@ def main(s = None):
     Goody.portion = robotConfig.getint('Mixing', 'portion')
     Goody.volume = robotConfig.getint('Mixing', 'volume')
     if robotConfig.getboolean('Robot', 'enabled'):
-        logFile = None
-        if robotConfig.getboolean('Logging', 'enabled'):
-            logFile = robotConfig.get('Logging', 'logFile')
-
-        robot = BotComm(robotConfig.get('Robot', 'serialPort'), g.robotMessage, logFile = logFile)
+        robot = BotComm(robotConfig.get('Robot', 'serialPort'), g.robotMessage)
 
     g.robot = robot
 
