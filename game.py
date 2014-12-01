@@ -17,7 +17,7 @@ dname = os.path.dirname(abspath)
 os.chdir(dname)
 
 # setup log file to subdir
-logging.basicConfig(filename='error.log', level=logging.DEBUG,
+logging.basicConfig(filename='log/error.log', level=logging.DEBUG,
                     format='%(levelname)8s - %(asctime)s: %(message)s')
 
 
@@ -529,6 +529,7 @@ class Game(object):
         self.overlay = None
 
     def removeObjects(self):
+        logging.debug("removing objects")
         for o in list(Object.objects):
             if not isinstance(o, SpaceShip):
                 Object.objects.remove(o)
@@ -551,7 +552,9 @@ class Game(object):
             Game.background.loop()
 
     def run(self):
+        logging.info('Starting main loop...')
         while True:
+            logging.debug("time=%d" % self.time)
             d = self.controller.getInput()
 
             if d == Controller.QUIT:
@@ -591,6 +594,7 @@ class Game(object):
             if self.countdown > 0:
                 self.output.printCountdown(self.countdown)
                 if self.time > Game.countdownTime:
+                    logging.info("countdown=%d" % self.countdown)
                     self.countdown -= 1
                     self.time = 0
                     if self.countdown == 0:
@@ -621,12 +625,15 @@ class Game(object):
         self.end("overFull")
 
     def end(self, status):
+        logging.info("Ending game now (status=%s)" % status)
         self.overlay = status
         self.removeObjects()
+        logging.debug("clearing screen")
         screen.clear()
         self.output.printField()
         self.createObjects = False
         if Game.background is not None:
+            logging.debug("Game.background.stopLoop()")
             Game.background.stopLoop()
 
     def lifeLost(self):
