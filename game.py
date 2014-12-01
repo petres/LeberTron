@@ -27,8 +27,6 @@ sys.path.append("./lib")
 import sound as soundLib
 from botComm import BotComm
 
-inp = None
-
 locale.setlocale(locale.LC_ALL, "")
 
 screen = None
@@ -343,7 +341,7 @@ class Output(object):
         x = x + 3
         self.addSign((x, 1), "Sensor:")
         if inp is not None:
-            self.addSign((x, 2), "cm slid: " + str(round(inp.curr)))
+            self.addSign((x, 2), "cm slid: " + str(round(self.inp.position)))
             self.addSign((x, 3), "cm now:  " + str(round(inp.currA)))
             self.addSign((x, 4), "shoot:   " + str(round(inp.shoot)))
             self.addSign((x, 5), "shoot d: " + str(round(inp.shootDist)))
@@ -445,11 +443,8 @@ class UltraSonicController(Controller):
 
     def __init__(self, serialPort, screen, position=False):
         import inputComm as ultraSonicInput
-        global inp
-        inp = ultraSonicInput
+        self.inp = ultraSonicInput.InputComm(serialPort)
         self.distPos    = (30, 80)
-        inp.connect(serialPort)
-        inp.start()
         super(UltraSonicController, self).__init__(screen, position)
 
     def getInput(self):
@@ -460,20 +455,20 @@ class UltraSonicController(Controller):
         elif c == ord('r'):
             return Controller.RETRY
 
-        if inp.shoot:
+        if self.inp.shoot:
             return Controller.SHOOT
 
-        if inp.state == -1:
+        if self.inp.state == -1:
             return Controller.LEFT
-        elif inp.state == 1:
+        elif self.inp.state == 1:
             return Controller.RIGHT
 
     def getPosition(self):
         assert self.position, "no position available"
-        return float(inp.curr - self.distPos[0]) / (self.distPos[1] - self.distPos[0])
+        return float(self.inp.position - self.distPos[0]) / (self.distPos[1] - self.distPos[0])
 
     def close(self):
-        inp.exitFlag = 1
+        self.inp.close()
 
 
 class KeyboardController(Controller):

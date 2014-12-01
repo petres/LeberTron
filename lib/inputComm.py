@@ -15,19 +15,21 @@ assess different states
 
 class InputComm():
 
-    def __init__(self, serialPort='/dev/tty.usbserial-A9WFF5LH',
+    def __init__(self, serialPort='/dev/tty.usbserial-A9WFF5LH', sliding = True,
         slidingWindowSize = 3, twoSensors = False, shootMin = 5, shootMax = 20):
 
         self.exitFlag = False
+        self.sliding = sliding
 
         self.slidingWindow = deque()
         self.slidingWindowSize = slidingWindowSize
 
+        self.shoot = False
         self.shootMin = shootMin
         self.shootMax = shootMax
 
         # -1: left | 0: idle | 1: right
-        # self.state = 0
+        self.state = 0
         
         self.position = 0
 
@@ -65,7 +67,7 @@ class InputComm():
         else:
             self.position = sum(self.slidingWindow) / len(self.slidingWindow)
 
-    def doThePosition2(self, distance):
+    # def doThePosition2(self, distance):
 
 
     def transformVal(self, serialInput):
@@ -79,7 +81,7 @@ class InputComm():
             try:
                 # Read Arduino
                 line = self.serialConn.readline().rstrip('\r\n')
-                logging.debug("LINE from Arduino: '%s'" % line)
+                # logging.debug("LINE from Arduino: '%s'" % line)
 
                 if self.twoSensors:
                     vals = line.split(" ")
@@ -99,8 +101,9 @@ class InputComm():
                 else:
                     self.position = distance
 
-                print self.position
+                logging.debug("Slided Position from Arduino: '%s'" % self.position)
             except Exception, e:
+                logging.error("Problem in Arduino Read: '%s'" % str(e))
                 continue
 
 
