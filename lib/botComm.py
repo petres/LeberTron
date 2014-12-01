@@ -7,7 +7,6 @@ Provide listener thread
 Disconnect gracefully
 
 """
-import sys
 import serial
 import threading
 import time

@@ -43,15 +43,16 @@ def inputRead():
         logging.debug("LINE from Arduino: '%s'" % line)
         try:
             currA = float(distances[0]) / 90 * 2
-        except ValueError as e:
+        except ValueError:
+            logging.warning("Could not read distance[0] from Arduino")
             continue
 
         logging.info("Received distances: " + str(distances))
 
         try:
             shootDist = float(distances[1]) / 90 * 2
-        except ValueError as e:
-
+        except ValueError:
+            logging.warning("Could not read distance[1] from Arduino")
             shootDist = 0
 
         if SLIDING:
