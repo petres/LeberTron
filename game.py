@@ -54,12 +54,12 @@ class Object(object):
     stdSpeed = 2
 
     def __init__(self, game, coords=None, signs=None, speed=None, color=None, signsArray=[], switchSignsTime=None):
-        self.game = game
-        self.coords = coords
-        self.signs  = signs
-        self.color  = color
-        self.startTime = game.time
-        self.signsArray = signsArray
+        self.game            = game
+        self.coords          = coords
+        self.signs           = signs
+        self.color           = color
+        self.startTime       = game.time
+        self.signsArray      = signsArray
         self.switchSignsTime = switchSignsTime
 
         if speed is None:
@@ -215,10 +215,10 @@ class Goody(Object):
         if Goody.cSpaceship is not None:
             Goody.cSpaceship.play()
         self.game.status['count'] += 1
-        self.game.status['ml']    += Goody.portion
+        self.game.status['ml']    += Goody.portion * self.factor
         self.game.status['goodies'].append(self.name)
         if self.game.robot is not None:
-            self.game.robot.pourBottle(self.arduino, Goody.portion)
+            self.game.robot.pourBottle(self.arduino, Goody.portion * self.factor)
         if self.game.status['ml'] > Goody.volume:
             self.game.full()
 
@@ -229,6 +229,7 @@ class Goody(Object):
             args["color"] = Goody.types[i]["color"]
             self.name = Goody.types[i]["name"]
             self.arduino  = Goody.types[i]["arduino"]
+            self.factor   = Goody.types[i]["factor"]
         super(Goody, self).__init__(game, **args)
 
 
@@ -523,9 +524,8 @@ class Game(object):
 
     def removeObjects(self):
         logging.debug("removing objects")
-        for o in list(Object.objects):
-            if not isinstance(o, SpaceShip):
-                Object.objects.remove(o)
+        Object.objects = [o for o in Object.objects
+                                if isinstance(o, SpaceShip)]
 
     def setStartStatus(self):
         self.status['count']   = 0
@@ -536,6 +536,8 @@ class Game(object):
 
     def prepare(self):
         self.time   = 0
+        self.removeObjects()
+        self.createObjects = False
         self.setStartStatus()
         self.output.prepareGame()
         self.countdown = 3
@@ -669,7 +671,8 @@ def main(s=None):
     ############################################################################
     # Design Config
     ############################################################################
-    designConfig = SafeConfigParser()
+    # default factor == 1
+    designConfig = SafeConfigParser({'factor': '1'})
     designConfig.read('./etc/design.cfg')
 
     # Set obstacles files
@@ -695,7 +698,8 @@ def main(s=None):
                 "color":    designConfig.getint(sectionName, 'color'),
                 "design":   os.path.join(ingredientsFolder, designConfig.get(sectionName, 'file')),
                 "name":     designConfig.get(sectionName, 'name'),
-                "arduino":  designConfig.getint(sectionName, 'arduino')
+                "arduino":  designConfig.getint(sectionName, 'arduino'),
+                "factor":   designConfig.getint(sectionName, 'factor')
         })
 
 
