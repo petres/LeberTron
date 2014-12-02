@@ -524,9 +524,8 @@ class Game(object):
 
     def removeObjects(self):
         logging.debug("removing objects")
-        for o in list(Object.objects):
-            if not isinstance(o, SpaceShip):
-                Object.objects.remove(o)
+        Object.objects = [o for o in Object.objects
+                                if isinstance(o, SpaceShip)]
 
     def setStartStatus(self):
         self.status['count']   = 0
@@ -537,6 +536,8 @@ class Game(object):
 
     def prepare(self):
         self.time   = 0
+        self.removeObjects()
+        self.createObjects = False
         self.setStartStatus()
         self.output.prepareGame()
         self.countdown = 3
