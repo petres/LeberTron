@@ -15,8 +15,12 @@ assess different states
 
 class InputComm():
 
-    def __init__(self, serialPort='/dev/tty.usbserial-A9WFF5LH', sliding = True,
-        slidingWindowSize = 3, twoSensors = False, shootMin = 5, shootMax = 20):
+    def __init__(self, serialPort='/dev/tty.usbserial-A9WFF5LH', distanceMin = 5, 
+        distanceMax = 30, sliding = True, slidingWindowSize = 3, twoSensors = False, 
+        shootMin = 5, shootMax = 20):
+
+        self.distanceMin = distanceMin
+        self.distanceMax = distanceMax
 
         self.exitFlag = False
         self.sliding = sliding
@@ -25,6 +29,7 @@ class InputComm():
         self.slidingWindowSize = slidingWindowSize
 
         self.shoot = False
+        self.bullet = True
         self.shootMin = shootMin
         self.shootMax = shootMax
 
@@ -53,10 +58,13 @@ class InputComm():
         if self.shootMin <= shootDistance <= self.shootMax:
             self.shoot = True
         else:
+            #self.bullet = True
             self.shoot = False
+
+
         
     def doThePosition(self, distance):
-        if 0 < distance < 100:
+        if self.distanceMin < distance < self.distanceMax:
             self.slidingWindow.append(distance)
         else:
             return            
@@ -90,23 +98,22 @@ class InputComm():
             try:
                 # Read Arduino
                 line = self.serialConn.readline().rstrip('\r\n')
-                # logging.debug("LINE from Arduino: '%s'" % line)
-
+                logging.debug("LINE from Arduino: '%s'" % line)
+                
                 if self.twoSensors:
                     vals = line.split(" ")
                     distance = vals[0]
-                    shootDistance = vals[0]
+                    distance = self.transformVal(distance)
+                    shootDistance = vals[1]
                     shootDistance = self.transformVal(shootDistance)
-
                     self.doTheShoot(shootDistance)
-
                 else: 
                     distance = float(line)
                     distance = self.transformVal(distance)
 
                 # Calculate current position with Sliding Window
                 if self.sliding:
-                    self.doThePosition2(distance)
+                    self.doThePosition(distance)
                     logging.debug("Slided Position from Arduino: '%s'" % self.position)
                 else:
                     self.position = distance
@@ -118,10 +125,11 @@ class InputComm():
 
 if __name__ == '__main__':
 
-    s = InputComm(slidingWindowSize = 3)
+    s = InputComm(serialPort="/dev/tty.usbmodem411", slidingWindowSize = 3, twoSensors = True)
 
     try:
         while True:
-            time.sleep(0.2)
+            print s.position, s.shoot
+            time.sleep(0.1)
     except KeyboardInterrupt:
         s.close()
