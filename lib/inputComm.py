@@ -58,6 +58,8 @@ class InputComm():
     def doThePosition(self, distance):
         if 0 < distance < 100:
             self.slidingWindow.append(distance)
+        else:
+            return            
 
         if len(self.slidingWindow) >= self.slidingWindowSize:
             self.slidingWindow.popleft()
@@ -67,7 +69,14 @@ class InputComm():
         else:
             self.position = sum(self.slidingWindow) / len(self.slidingWindow)
 
-    # def doThePosition2(self, distance):
+    def doThePosition2(self, distance):
+        prevPos = self.position
+        self.doThePosition(distance)
+        if prevPos < self.position:
+            self.position -= 0.1
+        elif prevPos > self.position:
+            self.position += 0.1 
+
 
 
     def transformVal(self, serialInput):
@@ -97,11 +106,11 @@ class InputComm():
 
                 # Calculate current position with Sliding Window
                 if self.sliding:
-                    self.doThePosition(distance)
+                    self.doThePosition2(distance)
+                    logging.debug("Slided Position from Arduino: '%s'" % self.position)
                 else:
                     self.position = distance
 
-                logging.debug("Slided Position from Arduino: '%s'" % self.position)
             except Exception, e:
                 logging.error("Problem in Arduino Read: '%s'" % str(e))
                 continue
