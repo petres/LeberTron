@@ -208,8 +208,8 @@ class Obstacle(Object):
 class Goody(Object):
     types       = []
     cSpaceship  = None
-    portion     = 10
-    volume      = 100
+    portion     = None
+    volume      = None
 
     def collision(self):
         if Goody.cSpaceship is not None:
@@ -219,7 +219,7 @@ class Goody(Object):
         self.game.status['goodies'].append(self.name)
         if self.game.robot is not None:
             self.game.robot.pourBottle(self.arduino, Goody.portion * self.factor)
-        if self.game.status['ml'] > Goody.volume:
+        if self.game.status['ml'] >= Goody.volume:
             self.game.full()
 
     def __init__(self, game, **args):
@@ -259,19 +259,15 @@ class SpaceShip(Object):
         if self.blinking:
             if self.blinkTime % self.switchBlinkTime == 0:
                 if self.blinkTime > self.switchBlinkDur:
-                    self.color = self.orgColor
-                    self.blinkColor = self.orgBlinkColor
+                    self.color, self.blinkColor = self.orgColor, self.orgBlinkColor
                     self.blinking = False
                 else:
-                    tmp = self.color
-                    self.color = self.blinkColor
-                    self.blinkColor = tmp
+                    self.color, self.blinkColor  = self.blinkColor, self.color
             self.blinkTime += 1
         return
 
     def blink(self):
-        self.orgColor = self.color
-        self.orgBlinkColor = self.blinkColor
+        self.orgColor, self.orgBlinkColor = self.color, self.blinkColor
         self.blinkTime = 0
         self.blinking = True
 
@@ -361,7 +357,7 @@ class Output(object):
         # self.addSign((x,12), "time:    " + str(game.time))
         # self.addSign((x,13), "objects: " + str(len(Object.objects)))
 
-        # self.printGlass(x, 12, game.status["goodies"])
+        self.printGlass(x - 13, 25, game.status["goodies"])
 
     def printCountdown(self, nr):
         self.fieldCenteredOutput("./screens/countdown/" + str(nr) + ".txt")
@@ -381,18 +377,16 @@ class Output(object):
         bottom = getFromFile("./objects/glass/bottom.txt")
 
         body = []
-        h = max(6, len(goodies))
+        h = max(10, len(goodies))
         for i in range(h, -1, -1):
             if i > len(goodies) or len(goodies) == 0:
                 body.append("||             ||")
-
             elif i == len(goodies):
                 body.append("|:--.._____..--:|")
-
             elif i < len(goodies):
                 body.append("||" + goodies[i].center(13, " ") + "||")
 
-        glass = top + body + bottom
+        glass = top[:-1] + body + bottom
         for l in glass:
             y += 1
             self.addSign((x, y), l)
@@ -524,8 +518,7 @@ class Game(object):
 
     def removeObjects(self):
         logging.debug("removing objects")
-        Object.objects = [o for o in Object.objects
-                                if isinstance(o, SpaceShip)]
+        Object.objects = [self.spaceShip]
 
     def setStartStatus(self):
         self.status['count']   = 0
