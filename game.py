@@ -442,9 +442,9 @@ class Controller(object):
 
 class UltraSonicController(Controller):
 
-    def __init__(self, serialPort, screen, position=False):
+    def __init__(self, serialPort, twoSensors, screen, position=False):
         import inputComm as ultraSonicInput
-        self.inp = ultraSonicInput.InputComm(serialPort)
+        self.inp = ultraSonicInput.InputComm(serialPort, twoSensors = twoSensors)
         self.distPos    = (30, 80)
         super(UltraSonicController, self).__init__(screen, position)
 
@@ -713,7 +713,8 @@ def main(s=None):
         controller = KeyboardController(screen, position)
     else:
         position = controllerConfig.getboolean('UltraSonic', 'position')
-        controller = UltraSonicController(controllerConfig.get('UltraSonic', 'serialPort'), screen, position)
+        controller = UltraSonicController(controllerConfig.get('UltraSonic', 'serialPort'),
+                                        controllerConfig.get('UltraSonic', 'twoSensors'), screen, position)
 
 
 
