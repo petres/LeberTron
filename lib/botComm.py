@@ -55,6 +55,8 @@ class BotComm(object):
                         if int(commandList[2]) == 1:
                             if self.pouring == False:
                                 self.ready = True
+                        else:
+                            self.abort()
 
                     elif commandList[0] == "WAITING_FOR_CUP":
                         pass
@@ -64,7 +66,8 @@ class BotComm(object):
                         self.pouring = False
                         pass
                     elif commandList[0] == "ERROR":
-                        pass
+                        if commandList[1] == "CUP_GONE":
+                            self.abort()
                     elif commandList[0] == "NOP":
                         pass
                     else:
@@ -108,6 +111,7 @@ class BotComm(object):
 
     def abort(self):
         """abort current cocktail"""
+        self.ready = False
         self.send("ABORT")
 
     def resume(self):
