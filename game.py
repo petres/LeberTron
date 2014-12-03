@@ -157,7 +157,7 @@ class Shoot(Object):
     soundShooting   = None
     soundCollision  = None
     lastStartTime   = 0
-    diffBetween     = 20
+    diffBetween     = 10
     def __init__(self, game, **args):
         logging.debug("init Shoot")
         if Shoot.lastStartTime > game.time - Shoot.diffBetween:
@@ -234,7 +234,7 @@ class Goody(Object):
         # collectedGoodies is an array of numbers of types already in the cocktail
         # to get the type information use Goody.types[number]
         # for example Goody.types[2]["category"], which can be "N" for non-alcoholic or "A" for alcoholic
-        
+
         return random.randint(0, len(Goody.types) - 1)
 
 
@@ -429,6 +429,7 @@ class Controller(object):
     QUIT    = -10
     RETRY   = -11
     SHOOT   = -12
+    PAUSE   = -13
 
     def __init__(self, screen, position):
         self.screen = screen
@@ -489,6 +490,8 @@ class KeyboardController(Controller):
             return Controller.RETRY
         elif c == ord(' '):
             return Controller.SHOOT
+        elif c == ord('p'):
+            return Controller.PAUSE
         # try:
         #     value = int(c)
         #     return float(value - 1)/8
@@ -506,12 +509,14 @@ class Game(object):
     background  = None
     createObjects = False
     countdownTime = 30
+    sleepTime     = 100
 
     def __init__(self, controller, output, robot=None):
         self.time       = 0
         self.controller = controller
         self.output     = output
         self.robot      = robot
+        self.pause      = False
         self.spaceShip  = SpaceShip(self)
         self.spaceShip.coords = (
             self.output.fieldSize[0] / 2, self.output.fieldSize[1] - 2)
@@ -556,6 +561,9 @@ class Game(object):
             if d == Controller.RETRY:
                 self.prepare()
 
+            if d == Controller.PAUSE:
+                self.switchPause()
+
             if self.controller.position == False:
                 m = 0
                 if d == Controller.LEFT:
@@ -596,21 +604,27 @@ class Game(object):
                     self.output.fieldCenteredOutput("./screens/lifes.txt")
                 elif self.overlay == "overFull":
                     self.output.fieldCenteredOutput("./screens/full.txt")
+                elif self.overlay == "refillBottle":
+                    self.output.fieldCenteredOutput("./screens/refill.txt")
 
-            # CREATE OBJECT
-            if self.createObjects:
-                if self.time % 60 == 0:
-                    g = Goody(self)
-                    g.setRandomXPos(self.output)
-                if self.time % 40 == 0:
-                    o = Obstacle(self)
-                    o.setRandomXPos(self.output)
-                    #pass
 
-            self.time += 1
-            timeLib.sleep(.03)
+            if not self.pause:
+                # CREATE OBJECT
+                if self.createObjects:
+                    if self.time % 60 == 0:
+                        g = Goody(self)
+                        g.setRandomXPos(self.output)
+                    if self.time % 40 == 0:
+                        o = Obstacle(self)
+                        o.setRandomXPos(self.output)
+                        #pass
+                self.time += 1
+            timeLib.sleep(Game.sleepTime)
 
         self.end("quit")
+
+    def switchPause(self):
+        self.pause = not self.pause
 
     def full(self):
         self.end("overFull")
@@ -641,8 +655,13 @@ class Game(object):
         else:
             self.spaceShip.blink()
 
-    def robotMessage(self, *bla):
-        pass
+    def robotMessage(self, message):
+        if message == "bottleEmpty":
+            self.pause = True
+            self.overlay = "refillBottle"
+        elif message == "bottleEmptyResume":
+            self.pause = False
+            self.overlay = None
 
 
 def main(s=None):
@@ -726,11 +745,14 @@ def main(s=None):
     # Robot Config
     ############################################################################
 
-    g = Game(controller=controller, output=o)
-
     robot = None
     robotConfig = SafeConfigParser()
     robotConfig.read('./etc/robot.cfg')
+
+    Game.sleepTime = float(robotConfig.getint('Game', 'sleepTime'))/100
+
+    g = Game(controller=controller, output=o)
+
     Goody.portion = robotConfig.getint('Mixing', 'portion')
     Goody.volume = robotConfig.getint('Mixing', 'volume')
     if robotConfig.getboolean('Robot', 'enabled'):

@@ -21,9 +21,10 @@ class BotComm(object):
         self.ready = False
         self.pouring = False
         self.pourQueue = Queue()
+        self.bottleEmpty = False
 
         try:
-            self.serialConn = serial.Serial(port=serialPort, timeout=0)
+            self.serialConn = serial.Serial(port=serialPort, timeout = 0)
             self.listenCallback = listenCallback
             self.listenThread = threading.Thread(
                 target=self.callbackWrapper)
@@ -43,11 +44,16 @@ class BotComm(object):
         serialBuffer = ""
         while not self.exitFlag:
             try:
-                serialBuffer += self.serialConn.read(1)
-                if (serialBuffer.endswith("\r\n")):
-                    command = serialBuffer.rstrip("\r\n")
+                serialBuffer += self.serialConn.read()
+
+                #logging.debug('R %s \\r\\n' % serialBuffer)
+
+                commandArray = serialBuffer.split("\r\n")
+                serialBuffer = commandArray.pop()
+                #logging.debug("commandArray=%s" % commandArray)
+
+                for command in commandArray:
                     logging.debug('R %s \\r\\n' % command)
-                    serialBuffer = ""
 
                     commandList = command.split(" ")
 
@@ -55,8 +61,6 @@ class BotComm(object):
                         if int(commandList[2]) == 1:
                             if self.pouring == False:
                                 self.ready = True
-                        else:
-                            self.abort()
 
                     elif commandList[0] == "WAITING_FOR_CUP":
                         pass
@@ -64,19 +68,25 @@ class BotComm(object):
                         pass
                     elif commandList[0] == "ENJOY":
                         self.pouring = False
-                        pass
+                        if self.bottleEmpty:
+                            self.bottleEmpty = True
+                            self.listenCallback("bottleEmptyResume")
+
                     elif commandList[0] == "ERROR":
-                        if commandList[1] == "CUP_GONE":
-                            self.abort()
+                        if commandList[1] == "BOTTLE_EMPTY":
+                            self.bottleEmpty = True
+                            self.listenCallback("bottleEmpty")
                     elif commandList[0] == "NOP":
                         pass
                     else:
                         pass
 
-                    self.listenCallback(command)
+                    #self.listenCallback(command)
 
                     if not self.pourQueue.empty() and self.ready:
                         self.pour(*self.pourQueue.get())
+
+                time.sleep(0.2)
 
             except Exception as e:
                 logging.info(str(e) + '\n')
@@ -149,7 +159,7 @@ if __name__ == '__main__':
     def youGotMsg(msg):
         print msg
 
-    c = BotComm('/dev/tty.usbmodem621', youGotMsg)
+    c = BotComm('/dev/ttyS99', youGotMsg)
     while True:
         if c.ready:
             print "Ready"
