@@ -16,8 +16,8 @@ assess different states
 class InputComm():
 
     def __init__(self, serialPort='/dev/tty.usbserial-A9WFF5LH', distanceMin = 5,
-        distanceMax = 30, sliding = False, slidingWindowSize = 15, twoSensors = False,
-        shootMin = 0, shootMax = 30, median = True):
+        distanceMax = 30, sliding = True, slidingWindowSize = 15, twoSensors = False,
+        shootMin = 0, shootMax = 40, median = True):
 
         self.distanceMin = distanceMin - 10
         self.distanceMax = distanceMax + 10
@@ -81,10 +81,8 @@ class InputComm():
     def getPositionDirect(self, distance):
         if self.distanceMin < distance < self.distanceMax:
             self.slidingWindow.append(distance)
-        else:
-            return
 
-        if len(self.slidingWindow) >= self.slidingWindowSize:
+        if len(self.slidingWindow) > self.slidingWindowSize:
             self.slidingWindow.popleft()
 
         if len(self.slidingWindow) < self.slidingWindowSize:
@@ -145,10 +143,10 @@ class InputComm():
 
 
 if __name__ == '__main__':
-    s = InputComm(serialPort="/dev/tty.usbmodem411", slidingWindowSize = 3, twoSensors = True)
+    s = InputComm(serialPort="/dev/tty.usbmodem411", slidingWindowSize = 3, twoSensors = True, sliding = True)
     try:
         while True:
-            print s.position, s.shoot
+            print s.position, s.bullets
             time.sleep(0.1)
     except KeyboardInterrupt:
         s.close()
