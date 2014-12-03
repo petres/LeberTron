@@ -18,7 +18,7 @@ void loop() {
     delayMicroseconds(10);
     digitalWrite(trigPin, LOW);
 
-    duration = pulseIn(echoPin, HIGH, 10000UL);
+    duration = pulseIn(echoPin, HIGH, 10000);
     Serial.println(duration);
     Serial.flush();
 }
