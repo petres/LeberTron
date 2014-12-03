@@ -86,7 +86,7 @@ class BotComm(object):
                     if not self.pourQueue.empty() and self.ready:
                         self.pour(*self.pourQueue.get())
 
-                time.sleep(0.2)
+                #time.sleep(0.2)
 
             except Exception as e:
                 logging.info(str(e) + '\n')
