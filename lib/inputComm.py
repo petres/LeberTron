@@ -52,6 +52,8 @@ class InputComm():
             raise e
 
     def close(self):
+        if self.bulletLock.locked():
+            self.bulletLock.release()
         self.exitFlag = True
         logging.info("INFO: Waiting for inputComm listen thread ... ")
         self.readThread.join()
