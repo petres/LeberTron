@@ -16,8 +16,8 @@ assess different states
 class InputComm():
 
     def __init__(self, serialPort='/dev/tty.usbserial-A9WFF5LH', distanceMin = 5,
-        distanceMax = 30, sliding = True, slidingWindowSize = 15, twoSensors = False,
-        shootMin = 5, shootMax = 20, median = True):
+        distanceMax = 30, sliding = False, slidingWindowSize = 15, twoSensors = False,
+        shootMin = 0, shootMax = 30, median = True):
 
         self.distanceMin = distanceMin - 10
         self.distanceMax = distanceMax + 10
@@ -29,8 +29,9 @@ class InputComm():
         self.slidingWindowSize = slidingWindowSize
         self.median = True
 
-        self.shoot = False
-        self.bullet = True
+        self.shootPosition = False
+        self.bullets = 0
+
         self.shootMin = shootMin
         self.shootMax = shootMax
 
@@ -44,6 +45,7 @@ class InputComm():
         try:
             self.serialConn = serial.Serial(serialPort, 9600)
             self.readThread = threading.Thread(target=self.readInputCallback)
+            self.bulletLock = threading.Lock()
             self.readThread.start()
         except Exception as e:
             logging.error("Problem in InputComm: '%s'" % str(e))
@@ -56,14 +58,25 @@ class InputComm():
         logging.info("DONE" + "\n")
         self.serialConn.close()
 
+    def fetchBullet(self):
+        ret = False
+        self.bulletLock.acquire()
+        if (self.bullets > 0):
+            self.bullets -= 1
+            ret = True
+        self.bulletLock.release()
+        return ret
+
+
     def doTheShoot(self, shootDistance):
         if self.shootMin <= shootDistance <= self.shootMax:
-            self.shoot = True
+            if not self.shootPosition:
+                self.bulletLock.acquire()
+                self.bullets += 1
+                self.bulletLock.release()
+            self.shootPosition = True
         else:
-            #self.bullet = True
-            self.shoot = False
-
-
+            self.shootPosition = False
 
     def getPositionDirect(self, distance):
         if self.distanceMin < distance < self.distanceMax:
@@ -88,7 +101,7 @@ class InputComm():
         tolerance = 1.5
         movement = 0.4
 
-        positionSensor = getPositionDirect(distance)
+        positionSensor = self.getPositionDirect(distance)
         if positionSensor > self.position + tolerance:
             return self.position + movement
         elif positionSensor < self.position - tolerance:

@@ -462,7 +462,7 @@ class UltraSonicController(Controller):
         elif c == ord('p'):
             return Controller.PAUSE
 
-        if self.inp.shoot:
+        if self.inp.fetchBullet():
             return Controller.SHOOT
 
         if self.inp.state == -1:
