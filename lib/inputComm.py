@@ -16,7 +16,7 @@ assess different states
 class InputComm():
 
     def __init__(self, serialPort='/dev/tty.usbserial-A9WFF5LH', distanceMin = 5, 
-        distanceMax = 30, sliding = True, slidingWindowSize = 3, twoSensors = False, 
+        distanceMax = 30, sliding = True, slidingWindowSize = 15, twoSensors = False, 
         shootMin = 5, shootMax = 20):
 
         self.distanceMin = distanceMin
@@ -113,7 +113,7 @@ class InputComm():
 
                 # Calculate current position with Sliding Window
                 if self.sliding:
-                    self.doThePosition(distance)
+                    self.doThePosition2(distance)
                     logging.debug("Slided Position from Arduino: '%s'" % self.position)
                 else:
                     self.position = distance

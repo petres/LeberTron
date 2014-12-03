@@ -362,7 +362,7 @@ class Output(object):
         # self.addSign((x,12), "time:    " + str(game.time))
         # self.addSign((x,13), "objects: " + str(len(Object.objects)))
 
-        self.printGlass(x - 13, 25, game.status["goodies"])
+        #self.printGlass(x - 13, 25, game.status["goodies"])
 
     def printCountdown(self, nr):
         self.fieldCenteredOutput("./screens/countdown/" + str(nr) + ".txt")
@@ -444,7 +444,7 @@ class UltraSonicController(Controller):
     def __init__(self, serialPort, twoSensors, screen, position=False):
         import inputComm as ultraSonicInput
         self.inp = ultraSonicInput.InputComm(serialPort, twoSensors = twoSensors)
-        self.distPos    = (30, 80)
+        self.distPos    = (5, 30)
         super(UltraSonicController, self).__init__(screen, position)
 
     def getInput(self):
