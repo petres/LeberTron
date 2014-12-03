@@ -64,7 +64,7 @@ class Object(object):
 
         if speed is None:
             self.speed = random.randint(
-                Object.stdSpeed / 2, Object.stdSpeed * 2)
+                Object.stdSpeed, Object.stdSpeed * 2)
         else:
             self.speed = speed
 
@@ -157,7 +157,7 @@ class Shoot(Object):
     soundShooting   = None
     soundCollision  = None
     lastStartTime   = 0
-    diffBetween     = 10
+    diffBetween     = 15
     def __init__(self, game, **args):
         logging.debug("init Shoot")
         if Shoot.lastStartTime > game.time - Shoot.diffBetween:
@@ -441,11 +441,12 @@ class Controller(object):
 
 
 class UltraSonicController(Controller):
-
+    distPos    = (5, 50)
     def __init__(self, serialPort, twoSensors, screen, position=False):
         import inputComm as ultraSonicInput
-        self.inp = ultraSonicInput.InputComm(serialPort, twoSensors = twoSensors)
-        self.distPos    = (5, 30)
+        self.inp = ultraSonicInput.InputComm(serialPort, twoSensors = twoSensors,
+                        distanceMin = UltraSonicController.distPos[0], distanceMax = UltraSonicController.distPos[1])
+
         super(UltraSonicController, self).__init__(screen, position)
 
     def getInput(self):
@@ -466,7 +467,10 @@ class UltraSonicController(Controller):
 
     def getPosition(self):
         assert self.position, "no position available"
-        return float(self.inp.position - self.distPos[0]) / (self.distPos[1] - self.distPos[0])
+        if self.mirror:
+            return 1 - float(self.inp.position - self.distPos[0]) / (self.distPos[1] - self.distPos[0])
+        else:
+            return float(self.inp.position - self.distPos[0]) / (self.distPos[1] - self.distPos[0])
 
     def close(self):
         self.inp.close()
@@ -611,10 +615,10 @@ class Game(object):
             if not self.pause:
                 # CREATE OBJECT
                 if self.createObjects:
-                    if self.time % 60 == 0:
+                    if self.time % 100 == 0:
                         g = Goody(self)
                         g.setRandomXPos(self.output)
-                    if self.time % 40 == 0:
+                    if self.time % 60 == 0:
                         o = Obstacle(self)
                         o.setRandomXPos(self.output)
                         #pass
@@ -730,6 +734,8 @@ def main(s=None):
         controller = KeyboardController(screen, position)
     else:
         position = controllerConfig.getboolean('UltraSonic', 'position')
+        UltraSonicController.mirror =  controllerConfig.getboolean('UltraSonic', 'mirror')
+        UltraSonicController.distPos = (controllerConfig.getint('UltraSonic', 'minMovDist'),  controllerConfig.getint('UltraSonic', 'maxMovDist'))
         controller = UltraSonicController(controllerConfig.get('UltraSonic', 'serialPort'),
                                         controllerConfig.get('UltraSonic', 'twoSensors'), screen, position)
 
