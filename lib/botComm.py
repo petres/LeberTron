@@ -24,7 +24,7 @@ class BotComm(object):
         self.bottleEmpty = False
 
         try:
-            self.serialConn = serial.Serial(port=serialPort, timeout=0)
+            self.serialConn = serial.Serial(port=serialPort, timeout = 0)
             self.listenCallback = listenCallback
             self.listenThread = threading.Thread(
                 target=self.callbackWrapper)
@@ -44,11 +44,16 @@ class BotComm(object):
         serialBuffer = ""
         while not self.exitFlag:
             try:
-                serialBuffer += self.serialConn.read(1)
-                if (serialBuffer.endswith("\r\n")):
-                    command = serialBuffer.rstrip("\r\n")
+                serialBuffer += self.serialConn.read()
+
+                #logging.debug('R %s \\r\\n' % serialBuffer)
+
+                commandArray = serialBuffer.split("\r\n")
+                serialBuffer = commandArray.pop()
+                #logging.debug("commandArray=%s" % commandArray)
+
+                for command in commandArray:
                     logging.debug('R %s \\r\\n' % command)
-                    serialBuffer = ""
 
                     commandList = command.split(" ")
 
@@ -154,7 +159,7 @@ if __name__ == '__main__':
     def youGotMsg(msg):
         print msg
 
-    c = BotComm('/dev/tty.usbmodem621', youGotMsg)
+    c = BotComm('/dev/ttyS99', youGotMsg)
     while True:
         if c.ready:
             print "Ready"
