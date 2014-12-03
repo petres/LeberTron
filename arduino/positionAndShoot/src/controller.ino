@@ -25,6 +25,9 @@ void loop() {
 	Serial.print(distanceA);
 	Serial.print(" ");
 	Serial.println(distanceB);
+	Serial.flush();
+
+	delay(40);
 }
 
 unsigned int getDistance(int trigPin, int echoPin) {
