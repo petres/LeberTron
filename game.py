@@ -439,6 +439,9 @@ class Controller(object):
         # implemented by sub class
         raise NotImplementedError
 
+    def close(self):
+        pass
+
 
 class UltraSonicController(Controller):
     distPos    = (5, 50)
@@ -456,6 +459,8 @@ class UltraSonicController(Controller):
             return Controller.QUIT
         elif c == ord('r'):
             return Controller.RETRY
+        elif c == ord('p'):
+            return Controller.PAUSE
 
         if self.inp.shoot:
             return Controller.SHOOT
@@ -466,7 +471,6 @@ class UltraSonicController(Controller):
             return Controller.RIGHT
 
     def getPosition(self):
-        assert self.position, "no position available"
         if self.mirror:
             return 1 - float(self.inp.position - self.distPos[0]) / (self.distPos[1] - self.distPos[0])
         else:
@@ -515,6 +519,9 @@ class Game(object):
     countdownTime = 30
     sleepTime     = 100
 
+    obstacleCreationTime = 10
+    goodyCreationTime = 10
+
     def __init__(self, controller, output, robot=None):
         self.time       = 0
         self.controller = controller
@@ -529,6 +536,8 @@ class Game(object):
         self.status     = {}
         self.setStartStatus()
         self.overlay    = None
+        self.oStatus    = None
+        self.oTime      = None
 
     def removeObjects(self):
         logging.debug("removing objects")
@@ -548,6 +557,7 @@ class Game(object):
         self.output.prepareGame()
         self.countdown = 3
         self.overlay = None
+        self.oStatus = None
         Shoot.lastStartTime = 0
         if Game.background is not None:
             Game.background.loop()
@@ -603,6 +613,10 @@ class Game(object):
                     if self.countdown == 0:
                         self.createObjects = True
 
+            if self.oStatus is not None:
+                 self.overlay = self.oStatus
+
+
             if self.overlay is not None:
                 if self.overlay == "overLifes":
                     self.output.fieldCenteredOutput("./screens/lifes.txt")
@@ -615,14 +629,14 @@ class Game(object):
             if not self.pause:
                 # CREATE OBJECT
                 if self.createObjects:
-                    if self.time % 100 == 0:
+                    if self.time % Game.goodyCreationTime == 0:
                         g = Goody(self)
                         g.setRandomXPos(self.output)
-                    if self.time % 60 == 0:
+                    if self.time % Game.obstacleCreationTime == 0:
                         o = Obstacle(self)
                         o.setRandomXPos(self.output)
-                        #pass
                 self.time += 1
+
             timeLib.sleep(Game.sleepTime)
 
         self.end("quit")
@@ -636,7 +650,7 @@ class Game(object):
     def end(self, status):
         logging.info("Ending game now (status=%s)" % status)
         logging.debug("threads alive: %s" % threading.active_count())
-        self.overlay = status
+        self.oStatus = status
         self.removeObjects()
         logging.debug("clearing screen")
         screen.clear()
@@ -652,8 +666,6 @@ class Game(object):
         logging.info("you lost a life!")
         self.status['lifes'] = self.status['lifes'] - 1
         logging.debug("status=%s" % self.status)
-        #curses.init_pair(self.spaceShip.color, 3, -1)
-        self.removeObjects()
         if self.status['lifes'] == 0:
             self.end("overLifes")
         else:
@@ -756,6 +768,8 @@ def main(s=None):
     robotConfig.read('./etc/robot.cfg')
 
     Game.sleepTime = float(robotConfig.getint('Game', 'sleepTime'))/100
+    Game.obstacleCreationTime = robotConfig.getint('Game', 'obstacleCreationTime')
+    Game.goodyCreationTime = robotConfig.getint('Game', 'goodyCreationTime')
 
     g = Game(controller=controller, output=o)
 
@@ -772,9 +786,8 @@ def main(s=None):
     if robot is not None:
         robot.close()
     # Cleaning Up
-    if isinstance(controller, UltraSonicController):
-        controller.close()
-        timeLib.sleep(0.3)
+
+    controller.close()
 
     screen.refresh()
 
