@@ -11,10 +11,14 @@ void setup() {
 void loop() {
     unsigned long duration;
     delay(40);
+
+    // Actual pulse is 15us wide - good
+    // (measured on Leonardo)
     digitalWrite(trigPin, HIGH);
     delayMicroseconds(10);
     digitalWrite(trigPin, LOW);
-    duration = pulseIn(echoPin, HIGH, 10000UL);
+
+    duration = pulseIn(echoPin, HIGH, 10000);
     Serial.println(duration);
     Serial.flush();
 }
