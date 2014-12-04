@@ -8,6 +8,7 @@ import curses
 import locale
 import random
 import logging
+import string
 import threading
 import time as timeLib
 from ConfigParser import SafeConfigParser
@@ -300,7 +301,8 @@ class Output(object):
         logging.warning("Possible number of different colors: %s" %
                         curses.COLORS)
 
-        y, x = screen.getmaxyx()
+        self.screenSize = screen.getmaxyx()
+        y, x = self.screenSize
         y -= 3
         x -= 3 + Output.statusWidth
         self.fieldPos = (1, 1)
@@ -341,28 +343,35 @@ class Output(object):
     def printStatus(self, game):
         x, y = self.statusPos
         x = x + 3
-        self.addSign((x, 1), "Sensor:")
-        if inp is not None:
-            self.addSign((x, 2), "cm slid: " + str(round(self.inp.position)))
-            self.addSign((x, 3), "cm now:  " + str(round(inp.currA)))
-            self.addSign((x, 4), "shoot:   " + str(round(inp.shoot)))
-            self.addSign((x, 5), "shoot d: " + str(round(inp.shootDist)))
+        # self.addSign((x, 1), "Sensor:")
+        # if inp is not None:
+        #     self.addSign((x, 2), "cm slid: " + str(round(self.inp.position)))
+        #     self.addSign((x, 3), "cm now:  " + str(round(inp.currA)))
+        #     self.addSign((x, 4), "shoot:   " + str(round(inp.shoot)))
+        #     self.addSign((x, 5), "shoot d: " + str(round(inp.shootDist)))
 
-        self.addSign((x, 9), " Lifes")
+        y = 12
+        for i, line in enumerate(getFromFile("./objects/heart.txt")):
+            self.addSign((x - 1, y + 1 + i), line, color = 2)
+            #self.addSign((x, 10 + i), line, color = curses.COLOR_RED)
+
         for i, line in enumerate(getFromFile("./objects/lifes/" + str(game.status['lifes']) + ".txt")):
-            self.addSign((x, 10 + i), line)
+            self.addSign((x, y + 8 + i), line)
 
-        x += 13
+        x += 14
 
-        self.addSign((x, 9), " Count")
+        for i, line in enumerate(getFromFile("./objects/bottle2.txt")):
+            self.addSign((x, y - 1 + i), line, color = 4)
+
         for i, line in enumerate(getFromFile("./objects/lifes/" + str(len(game.status['goodies'])) + ".txt")):
-            self.addSign((x, 10 + i), line)
+            self.addSign((x, y + 8 + i), line)
         # self.addSign((x,10), "count:  " + str(game.status['count']))
         # self.addSign((x,11), "lifes:   " + str(game.status['lifes']))
         # self.addSign((x,12), "time:    " + str(game.time))
         # self.addSign((x,13), "objects: " + str(len(Object.objects)))
 
-        #self.printGlass(x - 13, 25, game.status["goodies"])
+        self.printGlass(x - 13, self.screenSize[0] - 23, game.status["goodies"])
+        self.printRandomSigns((self.statusPos[0] + 1, self.statusPos[1] + 1), (self.statusSize[0], 7))
 
     def printCountdown(self, nr):
         self.fieldCenteredOutput("./screens/countdown/" + str(nr) + ".txt")
@@ -395,6 +404,12 @@ class Output(object):
         for l in glass:
             y += 1
             self.addSign((x, y), l)
+
+    def printRandomSigns(self, pos, size):
+        for i in range(size[1]):
+            self.addSign((pos[0], pos[1] + i), ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(size[0])), color = 6)
+
+
 
     def addSign(self, coords, sign, field=False, color=None):
         x, y = coords
