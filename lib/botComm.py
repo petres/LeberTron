@@ -55,8 +55,11 @@ class BotComm(object):
 
                     if commandList[0] == "READY":
                         if int(commandList[2]) == 1:
+                            self.listenCallback("cupThere")
                             if self.pouring == False:
                                 self.ready = True
+                        else:
+                            self.listenCallback("cupNotThere")
 
                     elif commandList[0] == "WAITING_FOR_CUP":
                         pass

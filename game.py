@@ -612,6 +612,7 @@ class Game(object):
         self.overlay    = None
         self.oStatus    = None
         self.oTime      = None
+        self.gameStarted = False
 
     def removeObjects(self):
         logging.debug("removing objects")
@@ -632,6 +633,7 @@ class Game(object):
         self.countdown = 3
         self.overlay = None
         self.oStatus = None
+        self.gameStarted = True
         Shoot.lastStartTime = 0
         if Game.background is not None:
             Game.background.loop()
@@ -646,7 +648,8 @@ class Game(object):
             elif d == Controller.SHOOT:
                 o = Shoot(self, coords = (self.spaceShip.coords[0], self.spaceShip.coords[1] - self.spaceShip.info['rHeight'] - 1))
 
-            if d == Controller.RETRY:
+            # start game
+            if d == Controller.RETRY or (not self.gameStarted and self.cupThere):
                 self.prepare()
 
             if d == Controller.PAUSE:
@@ -692,6 +695,7 @@ class Game(object):
 
 
             if self.overlay is not None:
+                self.gameStarted = False
                 if self.overlay == "overLifes":
                     self.output.fieldCenteredOutput("./screens/lifes.txt")
                 elif self.overlay == "overFull":
@@ -752,6 +756,10 @@ class Game(object):
         elif message == "bottleEmptyResume":
             self.pause = False
             self.overlay = None
+        elif message == "cupThere":
+            self.cupThere = True
+        elif message == "cupNotThere":
+            self.cupThere = False
 
 
 def main(s=None):
