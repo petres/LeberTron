@@ -17,7 +17,7 @@ class InputComm():
 
     def __init__(self, serialPort='/dev/tty.usbserial-A9WFF5LH', distanceMin = 5,
         distanceMax = 30, sliding = True, slidingWindowSize = 15, twoSensors = False,
-        shootMin = 0, shootMax = 40, median = True):
+        shootMin = 0, shootMax = 20, median = True):
 
         self.distanceMin = distanceMin - 10
         self.distanceMax = distanceMax + 10
