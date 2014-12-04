@@ -211,6 +211,7 @@ class Goody(Object):
     cSpaceship  = None
     portion     = None
     volume      = None
+    generateT   = None
 
     def collision(self):
         if Goody.cSpaceship is not None:
@@ -232,11 +233,37 @@ class Goody(Object):
         super(Goody, self).__init__(game, **args)
 
     def getNextGoodyType(self, collectedGoodies):
-        # collectedGoodies is an array of numbers of types already in the cocktail
-        # to get the type information use Goody.types[number]
-        # for example Goody.types[2]["category"], which can be "N" for non-alcoholic or "A" for alcoholic
+        weights = [4096] * len(Goody.types)
 
-        return random.randint(0, len(Goody.types) - 1)
+        for goody in collectedGoodies:
+            cat = Goody.types[goody]['category']
+            for i, wGoody in enumerate(Goody.types):
+                if cat == "A":
+                    if wGoody['category'] == "A" and i != goody:
+                        weights[i] = weights[i]/4
+                    if i == goody:
+                        weights[i] = weights[i]*2
+                elif cat == "N":
+                    if wGoody['category'] == "N" and i != goody:
+                        weights[i] = weights[i]/4
+
+
+        #         if Goody.types[wGoody]['category'] == cat
+
+        if Goody.generateT:
+            if Goody.generateT == "N":
+                for i, wGoody in enumerate(Goody.types):
+                    if wGoody['category'] == "A":
+                        weights[i] = 0
+
+
+        t = random.randint(0, sum(weights))
+
+        s = 0
+        for i in range(len(weights)):
+            s = s + weights[i]
+            if t <= s:
+                return i
 
 
 class SpaceShip(Object):
@@ -378,7 +405,10 @@ class Output(object):
 
 
 
-        self.printRandomSigns((self.statusPos[0] + 1, self.statusPos[1] + 1), (self.statusSize[0], 7))
+        self.printRandomSigns((self.statusPos[0] + 1, self.statusPos[1] + 1), (self.statusSize[0], 7), 6)
+
+        if Goody.generateT:
+            self.addSign((self.statusPos[0] + 2, self.statusPos[1] + 2), Goody.generateT, color = 6)
 
     def printCountdown(self, nr):
         self.fieldCenteredOutput("./screens/countdown/" + str(nr) + ".txt")
@@ -412,9 +442,9 @@ class Output(object):
             y += 1
             self.addSign((x, y), l)
 
-    def printRandomSigns(self, pos, size):
+    def printRandomSigns(self, pos, size, color):
         for i in range(size[1]):
-            self.addSign((pos[0], pos[1] + i), ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(size[0])), color = 6)
+            self.addSign((pos[0], pos[1] + i), ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(size[0])), color = color)
 
 
 
@@ -452,6 +482,7 @@ class Controller(object):
     RETRY   = -11
     SHOOT   = -12
     PAUSE   = -13
+    SWITCH_NON_ALC = -14
 
     def __init__(self, screen, position):
         self.screen = screen
@@ -522,6 +553,12 @@ class KeyboardController(Controller):
             return Controller.SHOOT
         elif c == ord('p'):
             return Controller.PAUSE
+        elif c == ord('n'):
+            Goody.generateT = "N"
+        elif c == ord('o'):
+            Goody.generateT = "O"
+        elif c == ord('c'):
+            Goody.generateT = None
         # try:
         #     value = int(c)
         #     return float(value - 1)/8
@@ -651,10 +688,10 @@ class Game(object):
             if not self.pause:
                 # CREATE OBJECT
                 if self.createObjects:
-                    if self.time % Game.goodyCreationTime == 0:
+                    if (self.time + 1) % Game.goodyCreationTime == 0:
                         g = Goody(self)
                         g.setRandomXPos(self.output)
-                    if self.time % Game.obstacleCreationTime == 0:
+                    if self.time  % Game.obstacleCreationTime == 0:
                         o = Obstacle(self)
                         o.setRandomXPos(self.output)
                 self.time += 1
