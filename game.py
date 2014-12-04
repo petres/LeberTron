@@ -612,6 +612,7 @@ class Game(object):
         self.overlay    = None
         self.oStatus    = None
         self.oTime      = None
+        self.cupThere   = False
         self.gameStarted = False
 
     def removeObjects(self):
@@ -703,7 +704,7 @@ class Game(object):
                 elif self.overlay == "refillBottle":
                     self.output.fieldCenteredOutput("./screens/refill.txt")
 
-            if (self.overlay == 'overLifes' or self.overlay == 'overFull') and not self.cup There:
+            if (self.overlay == 'overLifes' or self.overlay == 'overFull') and not self.cupThere:
                 self.gameStarted = False
                 self.output.fieldCenteredOutput("./screens/waiting.txt")
 
