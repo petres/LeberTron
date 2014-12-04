@@ -371,6 +371,13 @@ class Output(object):
         # self.addSign((x,13), "objects: " + str(len(Object.objects)))
 
         self.printGlass(x - 13, self.screenSize[0] - 23, game.status["goodies"])
+
+        if self.screenSize[0] - 23 - (y + 15) > 10:
+            for i, line in enumerate(getFromFile("./objects/lebertron.txt")):
+                self.addSign((self.statusPos[0] + 1,  (y + 16) + (self.screenSize[0] - 23 - (y + 15) - 9)/2 + i), line, color = 4)
+
+
+
         self.printRandomSigns((self.statusPos[0] + 1, self.statusPos[1] + 1), (self.statusSize[0], 7))
 
     def printCountdown(self, nr):
