@@ -634,6 +634,7 @@ class Game(object):
         self.overlay = None
         self.oStatus = None
         self.gameStarted = True
+        self.cupThere = False
         Shoot.lastStartTime = 0
         if Game.background is not None:
             Game.background.loop()
@@ -695,7 +696,6 @@ class Game(object):
 
 
             if self.overlay is not None:
-                self.gameStarted = False
                 if self.overlay == "overLifes":
                     self.output.fieldCenteredOutput("./screens/lifes.txt")
                 elif self.overlay == "overFull":
@@ -703,6 +703,9 @@ class Game(object):
                 elif self.overlay == "refillBottle":
                     self.output.fieldCenteredOutput("./screens/refill.txt")
 
+            if (self.overlay == 'overLifes' or self.overlay == 'overFull') and not self.cup There:
+                self.gameStarted = False
+                self.output.fieldCenteredOutput("./screens/waiting.txt")
 
             if not self.pause:
                 # CREATE OBJECT
