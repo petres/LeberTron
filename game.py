@@ -25,7 +25,7 @@ logging.basicConfig(filename='log/error.log', level=logging.DEBUG,
 
 sys.path.append("./lib")
 
-import sound as soundLib
+import sound2 as soundLib
 from botComm import BotComm
 
 locale.setlocale(locale.LC_ALL, "")
@@ -867,15 +867,31 @@ def main(s=None):
     g.robot = robot
 
     #g.prepare()
-    g.run()
+    try:
+        g.run()
+    except Exception, e:
+        raise e
+    finally:
+        # Cleaning Up
+        if soundConfig.getboolean('General', 'enabled'):
+            Shoot.soundShooting.close()
+            Shoot.soundCollision.close()
+            Obstacle.cSpaceship.close()
+            Goody.cSpaceship.close()
+            Game.background.close()
 
-    if robot is not None:
-        robot.close()
-    # Cleaning Up
+        if robot is not None:
+            robot.close()
 
-    controller.close()
 
-    screen.refresh()
+        controller.close()
+
+        screen.refresh()
+    
+
+
+
+
 
 
 #main()
