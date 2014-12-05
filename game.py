@@ -178,7 +178,7 @@ class Shoot(Object):
 
     def check(self):
         for o in Object.objects:
-            if isinstance(o, Obstacle):
+            if isinstance(o, Obstacle) or isinstance(o, Goody):
                 if len(set(self.getPosArray()).intersection(o.getPosArray())) > 0:
                     Object.objects.remove(o)
                     Object.objects.remove(self)
@@ -192,9 +192,10 @@ class Obstacle(Object):
     cSpaceship  = None
 
     def collision(self):
-        if Obstacle.cSpaceship is not None:
-            Obstacle.cSpaceship.play()
-        self.game.lifeLost()
+        if not self.game.spaceShip.blinking:
+            if Obstacle.cSpaceship is not None:
+                Obstacle.cSpaceship.play()
+            self.game.lifeLost()
 
 
     def __init__(self, game, **args):
@@ -217,7 +218,9 @@ class Goody(Object):
         if Goody.cSpaceship is not None:
             Goody.cSpaceship.play()
         self.game.status['ml']    += Goody.portion * Goody.types[self.type]["factor"]
-        self.game.status['goodies'].append(self.type)
+        for i in range(Goody.types[self.type]["factor"]):
+            self.game.status['goodies'].append(self.type)
+        self.game.status['count'] += 1
 
         if self.game.robot is not None:
             self.game.robot.pourBottle(Goody.types[self.type]["arduino"], Goody.portion * Goody.types[self.type]["factor"])
@@ -262,7 +265,11 @@ class Goody(Object):
         if Goody.generateT:
             if Goody.generateT == "N":
                 for i, wGoody in enumerate(Goody.types):
-                    if wGoody['category'] == "A":
+                    if wGoody['category'] != "N":
+                        weights[i] = 0
+            if Goody.generateT == "A":
+                for i, wGoody in enumerate(Goody.types):
+                    if wGoody['category'] != "A":
                         weights[i] = 0
 
 
@@ -290,7 +297,7 @@ class SpaceShip(Object):
             args["color"] = SpaceShip.color
             args["switchSignsTime"] = 10
             self.switchBlinkTime = 8
-            self.switchBlinkDur = 50
+            self.switchBlinkDuration = 50
             self.blinking = False
         super(SpaceShip, self).__init__(game, **args)
 
@@ -300,13 +307,12 @@ class SpaceShip(Object):
     def check(self):
         if self.blinking:
             if self.blinkTime % self.switchBlinkTime == 0:
-                if self.blinkTime > self.switchBlinkDur:
+                if self.blinkTime > self.switchBlinkDuration:
                     self.color, self.blinkColor = self.orgColor, self.orgBlinkColor
                     self.blinking = False
                 else:
                     self.color, self.blinkColor  = self.blinkColor, self.color
             self.blinkTime += 1
-        return
 
     def blink(self):
         self.orgColor, self.orgBlinkColor = self.color, self.blinkColor
@@ -400,27 +406,51 @@ class Output(object):
         for i, line in enumerate(getFromFile("./objects/bottle2.txt")):
             self.addSign((x, y - 1 + i), line, color = 4)
 
-        for i, line in enumerate(getFromFile("./objects/lifes/" + str(len(game.status['goodies'])) + ".txt")):
+        for i, line in enumerate(getFromFile("./objects/lifes/" + str(game.status['count']) + ".txt")):
             self.addSign((x, y + 8 + i), line)
         # self.addSign((x,10), "count:  " + str(game.status['count']))
         # self.addSign((x,11), "lifes:   " + str(game.status['lifes']))
         # self.addSign((x,12), "time:    " + str(game.time))
         # self.addSign((x,13), "objects: " + str(len(Object.objects)))
 
-        self.printGlass(x - 13, self.screenSize[0] - 23, game.status["goodies"])
+        
+        if game.cupThere:
+            self.printGlass((x - 13, self.screenSize[0] - 24), game.status["goodies"])
+            self.printMl((x - 15, self.screenSize[0] - 31), game.status["ml"])
 
-        if self.screenSize[0] - 23 - (y + 15) > 10:
+        if self.screenSize[0] - 31 - (y + 15) > 10:
             for i, line in enumerate(getFromFile("./objects/lebertron.txt")):
-                self.addSign((self.statusPos[0] + 1,  (y + 16) + (self.screenSize[0] - 23 - (y + 15) - 9)/2 + i), line, color = 7)
+                self.addSign((self.statusPos[0] + 1,  (y + 16) + (self.screenSize[0] - 31 - (y + 15) - 9)/2 + i), line, color = 7)
 
 
         self.printRandomSigns((self.statusPos[0] + 1, self.statusPos[1] + 1), (self.statusSize[0], 7), 6)
 
+ 
+
         if Goody.generateT:
-            self.addSign((self.statusPos[0] + 2, self.statusPos[1] + 2), Goody.generateT, color = 6)
+            self.addSign((self.statusPos[0] + 2, self.statusPos[1] + 2), Goody.generateT * 10, color = 6)
 
     def printCountdown(self, nr):
         self.fieldCenteredOutput("./screens/countdown/" + str(nr) + ".txt")
+
+    def printMl(self, pos, ml):
+        x, y = pos
+        color = 5
+
+        if ml > 100:
+            for i, line in enumerate(getFromFile("./objects/lifes/" + str(int(ml/100)) + ".txt")):
+                self.addSign((x, y + i), line, color = color) 
+
+        x += 8
+        if ml > 10:
+            for i, line in enumerate(getFromFile("./objects/lifes/" + str((ml/10)%10) + ".txt")):
+                self.addSign((x, y + i), line, color = color) 
+
+        x += 8
+
+        for i, line in enumerate(getFromFile("./objects/lifes/" + str(ml%10) + ".txt")):
+            self.addSign((x, y + i), line, color = color) 
+       
 
     def fieldCenteredOutput(self, file):
         signs = getFromFile(file)
@@ -432,12 +462,13 @@ class Output(object):
             ty = by + i
             self.addSign((bx, ty), line, True)
 
-    def printGlass(self, x, y, goodies):
+    def printGlass(self, pos, goodies):
+        x, y = pos
         top = getFromFile("./objects/glass/top.txt")
         bottom = getFromFile("./objects/glass/bottom.txt")
 
         body = []
-        h = max(10, len(goodies))
+        h = max(11, len(goodies))
         for i in range(h, -1, -1):
             if i > len(goodies) or len(goodies) == 0:
                 body.append("||             ||")
@@ -492,6 +523,7 @@ class Controller(object):
     SHOOT   = -12
     PAUSE   = -13
     SWITCH_NON_ALC = -14
+    CUPTEST = -15
 
     def __init__(self, screen, position):
         self.screen = screen
@@ -523,6 +555,8 @@ class UltraSonicController(Controller):
             return Controller.RETRY
         elif c == ord('p'):
             return Controller.PAUSE
+        elif c == ord('a'):
+            Goody.generateT = "A"
         elif c == ord('n'):
             Goody.generateT = "N"
         elif c == ord('o'):
@@ -574,6 +608,9 @@ class KeyboardController(Controller):
             Goody.generateT = "O"
         elif c == ord('c'):
             Goody.generateT = None
+        elif c == ord('l'):
+            return Controller.CUPTEST
+           
         # try:
         #     value = int(c)
         #     return float(value - 1)/8
@@ -589,6 +626,8 @@ class KeyboardController(Controller):
 class Game(object):
     moveStepSize = 3
     background  = None
+    soundLost   = None
+    soundFull   = None
     createObjects = False
     countdownTime = 30
     sleepTime     = 100
@@ -610,9 +649,10 @@ class Game(object):
         self.status     = {}
         self.setStartStatus()
         self.overlay    = None
-        self.oStatus    = None
         self.oTime      = None
         self.cupThere   = False
+        self.cupTaken   = True
+
         self.gameStarted = False
 
     def removeObjects(self):
@@ -621,9 +661,9 @@ class Game(object):
 
     def setStartStatus(self):
         self.status['goodies'] = []
-        self.status['lifes']   = 3
+        self.status['lifes']   = 1
         self.status['ml']      = 0
-
+        self.status['count']   = 0
 
     def prepare(self):
         self.time   = 0
@@ -633,9 +673,8 @@ class Game(object):
         self.output.prepareGame()
         self.countdown = 3
         self.overlay = None
-        self.oStatus = None
         self.gameStarted = True
-        self.cupThere = False
+        self.cupTaken   = False
         Shoot.lastStartTime = 0
         if Game.background is not None:
             Game.background.loop()
@@ -649,9 +688,14 @@ class Game(object):
                 break
             elif d == Controller.SHOOT:
                 o = Shoot(self, coords = (self.spaceShip.coords[0], self.spaceShip.coords[1] - self.spaceShip.info['rHeight'] - 1))
+            elif d == Controller.CUPTEST:
+                if self.cupThere:
+                    self.robotMessage("cupNotThere")
+                else:
+                    self.robotMessage("cupThere")
 
             # start game
-            if d == Controller.RETRY or (not self.gameStarted and self.cupThere):
+            if d == Controller.RETRY or (not self.gameStarted and self.cupThere and self.cupTaken):
                 self.prepare()
 
             if d == Controller.PAUSE:
@@ -692,21 +736,18 @@ class Game(object):
                     if self.countdown == 0:
                         self.createObjects = True
 
-            if self.oStatus is not None:
-                 self.overlay = self.oStatus
-
-
             if self.overlay is not None:
                 if self.overlay == "overLifes":
-                    self.output.fieldCenteredOutput("./screens/lifes.txt")
+                    file = "./screens/lifes.txt"
                 elif self.overlay == "overFull":
-                    self.output.fieldCenteredOutput("./screens/full.txt")
+                    file = "./screens/full.txt"
                 elif self.overlay == "refillBottle":
-                    self.output.fieldCenteredOutput("./screens/refill.txt")
-
-            if (self.overlay == 'overLifes' or self.overlay == 'overFull') and not self.cupThere:
-                self.gameStarted = False
-                self.output.fieldCenteredOutput("./screens/waiting.txt")
+                    file = "./screens/refill.txt"
+                elif self.overlay == "waiting":
+                    file = "./screens/waiting.txt"
+                elif self.overlay == "cupMissing":
+                    file = "./screens/cupMissing.txt"
+                self.output.fieldCenteredOutput(file)
 
             if not self.pause:
                 # CREATE OBJECT
@@ -730,13 +771,22 @@ class Game(object):
         self.end("overFull")
 
     def end(self, status):
+        if status == "overLifes":
+            if Game.soundLost is not None:
+                Game.soundLost.play()
+        if status == "overFull":
+            if Game.soundLost is not None:
+                Game.soundFull.play()
+
         logging.info("Ending game now (status=%s)" % status)
         logging.debug("threads alive: %s" % threading.active_count())
-        self.oStatus = status
+        self.overlay = status
         self.removeObjects()
+        self.cupTaken = False
         logging.debug("clearing screen")
         screen.clear()
         self.output.printField()
+        self.gameStarted = False
         self.createObjects = False
         if Game.background is not None:
             logging.debug("Game.background.stopLoop()")
@@ -762,8 +812,20 @@ class Game(object):
             self.overlay = None
         elif message == "cupThere":
             self.cupThere = True
+            if self.gameStarted:
+                self.overlay = None
+                self.pause = False
         elif message == "cupNotThere":
             self.cupThere = False
+            self.cupTaken = True
+            if self.countdown > 0:
+                self.gameStarted = False
+                self.countdown = 0
+            if self.gameStarted:
+                self.pause = True
+                self.overlay = "cupMissing"
+            if not self.gameStarted:
+                self.overlay = "waiting"
 
 
 def main(s=None):
@@ -784,6 +846,8 @@ def main(s=None):
         Obstacle.cSpaceship     = soundLib.Sound(soundConfig.get('Spaceship', 'obstacle'))
         Goody.cSpaceship        = soundLib.Sound(soundConfig.get('Spaceship', 'goody'))
         Game.background         = soundLib.Sound(soundConfig.get('General', 'background'))
+        Game.soundLost          = soundLib.Sound(soundConfig.get('General', 'lost'))
+        Game.soundFull          = soundLib.Sound(soundConfig.get('General', 'full'))
 
 
     ############################################################################
@@ -866,7 +930,6 @@ def main(s=None):
 
     g.robot = robot
 
-    #g.prepare()
     g.run()
 
     if robot is not None:
