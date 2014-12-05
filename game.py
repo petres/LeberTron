@@ -233,19 +233,28 @@ class Goody(Object):
         super(Goody, self).__init__(game, **args)
 
     def getNextGoodyType(self, collectedGoodies):
-        weights = [4096] * len(Goody.types)
+        #return random.randint(0, len(Goody.types) - 1)
 
-        for goody in collectedGoodies:
-            cat = Goody.types[goody]['category']
-            for i, wGoody in enumerate(Goody.types):
-                if cat == "A":
-                    if wGoody['category'] == "A" and i != goody:
-                        weights[i] = weights[i]/4
-                    if i == goody:
-                        weights[i] = weights[i]*2
-                elif cat == "N":
-                    if wGoody['category'] == "N" and i != goody:
-                        weights[i] = weights[i]/4
+
+        weights = [4096] * len(Goody.types)
+        for i, wGoody in enumerate(Goody.types):
+            if wGoody['category'] == "A":
+                weights[i] = 4096
+            else:
+                weights[i] = 8192
+
+
+        # for goody in collectedGoodies:
+        #     cat = Goody.types[goody]['category']
+        #     for i, wGoody in enumerate(Goody.types):
+        #         if cat == "A":
+        #             if wGoody['category'] == "A" and i != goody:
+        #                 weights[i] = weights[i]/4
+        #             if i == goody:
+        #                 weights[i] = weights[i]*2
+        #         elif cat == "N":
+        #             if wGoody['category'] == "N" and i != goody:
+        #                 weights[i] = weights[i]/2
 
 
         #         if Goody.types[wGoody]['category'] == cat
@@ -355,13 +364,14 @@ class Output(object):
             o.draw(self)
 
     def printField(self):
+        fieldColor = 0
         for i in range(self.fieldPos[0] - 1, self.fieldPos[0] + self.fieldSize[0] + 2):
-            self.addSign((i, self.fieldPos[1] - 1), u"█")
-            self.addSign((i, self.fieldPos[1] + self.fieldSize[1] + 1), u"█")
+            self.addSign((i, self.fieldPos[1] - 1), u"█", color = fieldColor)
+            self.addSign((i, self.fieldPos[1] + self.fieldSize[1] + 1), u"█", color = fieldColor)
 
         for i in range(self.fieldPos[1] - 1, self.fieldPos[1] + self.fieldSize[1] + 2):
-            self.addSign((self.fieldPos[0] - 1, i), u"█", color=None)
-            self.addSign((self.fieldPos[0] + self.fieldSize[0] + 1, i), u"█")
+            self.addSign((self.fieldPos[0] - 1, i), u"█", color = fieldColor)
+            self.addSign((self.fieldPos[0] + self.fieldSize[0] + 1, i), u"█", color = fieldColor)
 
     def clearField(self, pos, size, sign=" "):
         for i in range(pos[1], pos[1] + size[1] + 1):
@@ -401,8 +411,7 @@ class Output(object):
 
         if self.screenSize[0] - 23 - (y + 15) > 10:
             for i, line in enumerate(getFromFile("./objects/lebertron.txt")):
-                self.addSign((self.statusPos[0] + 1,  (y + 16) + (self.screenSize[0] - 23 - (y + 15) - 9)/2 + i), line, color = 4)
-
+                self.addSign((self.statusPos[0] + 1,  (y + 16) + (self.screenSize[0] - 23 - (y + 15) - 9)/2 + i), line, color = 7)
 
 
         self.printRandomSigns((self.statusPos[0] + 1, self.statusPos[1] + 1), (self.statusSize[0], 7), 6)
@@ -514,6 +523,12 @@ class UltraSonicController(Controller):
             return Controller.RETRY
         elif c == ord('p'):
             return Controller.PAUSE
+        elif c == ord('n'):
+            Goody.generateT = "N"
+        elif c == ord('o'):
+            Goody.generateT = "O"
+        elif c == ord('c'):
+            Goody.generateT = None
 
         if self.inp.fetchBullet():
             return Controller.SHOOT
@@ -597,6 +612,8 @@ class Game(object):
         self.overlay    = None
         self.oStatus    = None
         self.oTime      = None
+        self.cupThere   = False
+        self.gameStarted = False
 
     def removeObjects(self):
         logging.debug("removing objects")
@@ -617,6 +634,8 @@ class Game(object):
         self.countdown = 3
         self.overlay = None
         self.oStatus = None
+        self.gameStarted = True
+        self.cupThere = False
         Shoot.lastStartTime = 0
         if Game.background is not None:
             Game.background.loop()
@@ -631,7 +650,8 @@ class Game(object):
             elif d == Controller.SHOOT:
                 o = Shoot(self, coords = (self.spaceShip.coords[0], self.spaceShip.coords[1] - self.spaceShip.info['rHeight'] - 1))
 
-            if d == Controller.RETRY:
+            # start game
+            if d == Controller.RETRY or (not self.gameStarted and self.cupThere):
                 self.prepare()
 
             if d == Controller.PAUSE:
@@ -684,6 +704,9 @@ class Game(object):
                 elif self.overlay == "refillBottle":
                     self.output.fieldCenteredOutput("./screens/refill.txt")
 
+            if (self.overlay == 'overLifes' or self.overlay == 'overFull') and not self.cupThere:
+                self.gameStarted = False
+                self.output.fieldCenteredOutput("./screens/waiting.txt")
 
             if not self.pause:
                 # CREATE OBJECT
@@ -737,6 +760,10 @@ class Game(object):
         elif message == "bottleEmptyResume":
             self.pause = False
             self.overlay = None
+        elif message == "cupThere":
+            self.cupThere = True
+        elif message == "cupNotThere":
+            self.cupThere = False
 
 
 def main(s=None):
