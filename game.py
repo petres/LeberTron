@@ -23,6 +23,26 @@ logging.basicConfig(filename='log/error.log', level=logging.DEBUG,
                     format='%(levelname)8s - %(asctime)s: %(message)s')
 
 
+# Catch stderr and create log messages...
+class StderrToHandler(object):
+    def __init__(self, logger=None): 
+        self.logger = logger or logging
+        self._buffer = ''
+
+    def flush(self):
+        pass
+
+    def write(self, msg):
+        if not isinstance(msg, str):
+            msg = str(msg)
+            self._buffer += msg
+        if msg.endswith("\n"):
+            logger.warning(self._buffer.rstrip())
+            self._buffer = ''
+
+sys.stderr = StderrToHandler()
+
+
 sys.path.append("./lib")
 
 import sound2 as soundLib
