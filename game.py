@@ -661,7 +661,7 @@ class Game(object):
 
     def setStartStatus(self):
         self.status['goodies'] = []
-        self.status['lifes']   = 1
+        self.status['lifes']   = 3
         self.status['ml']      = 0
         self.status['count']   = 0
 
@@ -944,6 +944,8 @@ def main(s=None):
             Obstacle.cSpaceship.close()
             Goody.cSpaceship.close()
             Game.background.close()
+            Game.soundFull.close()
+            Game.soundLost.close()
 
         if robot is not None:
             robot.close()
