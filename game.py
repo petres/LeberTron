@@ -260,11 +260,11 @@ class Goody(Object):
 
 
         weights = [4096] * len(Goody.types)
-        for i, wGoody in enumerate(Goody.types):
-            if wGoody['category'] == "A":
-                weights[i] = 4096
-            else:
-                weights[i] = 8192
+        # for i, wGoody in enumerate(Goody.types):
+        #     if wGoody['category'] == "A":
+        #         weights[i] = 4096
+        #     else:
+        #         weights[i] = 8192
 
 
         # for goody in collectedGoodies:
@@ -455,7 +455,7 @@ class Output(object):
 
     def printMl(self, pos, ml):
         x, y = pos
-        color = 5
+        color = 3
 
         if ml > 100:
             for i, line in enumerate(getFromFile("./objects/lifes/" + str(int(ml/100)) + ".txt")):
@@ -681,7 +681,7 @@ class Game(object):
 
     def setStartStatus(self):
         self.status['goodies'] = []
-        self.status['lifes']   = 3
+        self.status['lifes']   = 4
         self.status['ml']      = 0
         self.status['count']   = 0
 
