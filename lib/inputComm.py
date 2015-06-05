@@ -13,11 +13,12 @@ keep track of states
 assess different states
 """
 
+
 class InputComm():
 
-    def __init__(self, serialPort='/dev/tty.usbserial-A9WFF5LH', distanceMin = 5,
-        distanceMax = 30, sliding = True, slidingWindowSize = 15, twoSensors = False,
-        shootMin = 0, shootMax = 20, median = True):
+    def __init__(self, serialPort='/dev/tty.usbserial-A9WFF5LH', distanceMin=5,
+                 distanceMax=30, sliding=True, slidingWindowSize=15, twoSensors=False, shootButton=False,
+                 shootMin=0, shootMax=20, median=True):
 
         self.distanceMin = distanceMin - 10
         self.distanceMax = distanceMax + 10
@@ -41,6 +42,11 @@ class InputComm():
         self.position = 0
 
         self.twoSensors = twoSensors
+        self.shootButton = shootButton
+        if shootButton:
+            logging.error("SHOOT-BUTTON")
+        if twoSensors:
+            logging.error("TWO SENSOR")
 
         try:
             self.serialConn = serial.Serial(serialPort, 9600)
@@ -69,7 +75,6 @@ class InputComm():
         self.bulletLock.release()
         return ret
 
-
     def doTheShoot(self, shootDistance):
         if self.shootMin <= shootDistance <= self.shootMax:
             if not self.shootPosition:
@@ -88,14 +93,13 @@ class InputComm():
             self.slidingWindow.popleft()
 
         if len(self.slidingWindow) < self.slidingWindowSize:
-            return (self.distanceMin + self.distanceMax)/2
+            return (self.distanceMin + self.distanceMax) / 2
 
         if self.median:
             sortList = sorted(self.slidingWindow)
             return sortList[int(self.slidingWindowSize / 2)]
         else:
             return sum(self.slidingWindow) / len(self.slidingWindow)
-
 
     def getPositionAdjusted(self, distance):
         tolerance = 1.5
@@ -108,10 +112,8 @@ class InputComm():
             return self.position - movement
         return self.position
 
-
     def transformVal(self, serialInput):
         return float(serialInput) / 90 * 2
-
 
     def readInputCallback(self):
         while not self.exitFlag:
@@ -128,6 +130,18 @@ class InputComm():
                     shootDistance = vals[1]
                     shootDistance = self.transformVal(shootDistance)
                     self.doTheShoot(shootDistance)
+                elif self.shootButton:
+                    logging.debug("SHOOTING")
+                    vals = line.split(" ")
+                    distance = vals[0]
+                    distance = self.transformVal(distance)
+                    shoot = vals[1]
+                    
+                    if int(shoot) == 1:
+                        
+                        self.bulletLock.acquire()
+                        self.bullets += 1
+                        self.bulletLock.release()
                 else:
                     distance = float(line)
                     distance = self.transformVal(distance)
@@ -145,7 +159,7 @@ class InputComm():
 
 
 if __name__ == '__main__':
-    s = InputComm(serialPort="/dev/tty.usbmodem411", slidingWindowSize = 3, twoSensors = True, sliding = True)
+    s = InputComm(serialPort="/dev/tty.usbmodem411", slidingWindowSize=3, twoSensors=True, sliding=True)
     try:
         while True:
             print s.position, s.bullets

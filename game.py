@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 # -*- coding: utf-8 -*-
 
 import os
@@ -559,9 +559,9 @@ class Controller(object):
 
 class UltraSonicController(Controller):
     distPos    = (5, 50)
-    def __init__(self, serialPort, twoSensors, screen, position=False):
+    def __init__(self, serialPort, twoSensors, shootButton, screen, position=False):
         import inputComm as ultraSonicInput
-        self.inp = ultraSonicInput.InputComm(serialPort, twoSensors = twoSensors,
+        self.inp = ultraSonicInput.InputComm(serialPort, twoSensors = twoSensors, shootButton = shootButton,
                         distanceMin = UltraSonicController.distPos[0], distanceMax = UltraSonicController.distPos[1])
 
         super(UltraSonicController, self).__init__(screen, position)
@@ -918,8 +918,10 @@ def main(s=None):
         position = controllerConfig.getboolean('UltraSonic', 'position')
         UltraSonicController.mirror =  controllerConfig.getboolean('UltraSonic', 'mirror')
         UltraSonicController.distPos = (controllerConfig.getint('UltraSonic', 'minMovDist'),  controllerConfig.getint('UltraSonic', 'maxMovDist'))
+        #import ipdb; ipdb.set_trace()
         controller = UltraSonicController(controllerConfig.get('UltraSonic', 'serialPort'),
-                                        controllerConfig.get('UltraSonic', 'twoSensors'), screen, position)
+                                        controllerConfig.getboolean('UltraSonic', 'twoSensors'), controllerConfig.getboolean('UltraSonic', 'shootButton'),
+                                        screen, position)
 
 
 
