@@ -31,7 +31,7 @@ void loop() {
 }
 
 unsigned int getDistance(int trigPin, int echoPin) {
-	delay(40);
+	//delay(40);
 	digitalWrite(trigPin, HIGH);
 	delayMicroseconds(10);
 	digitalWrite(trigPin, LOW);

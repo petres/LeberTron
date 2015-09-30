@@ -17,7 +17,7 @@ assess different states
 class InputComm():
 
     def __init__(self, serialPort='/dev/tty.usbserial-A9WFF5LH', distanceMin=5,
-                 distanceMax=30, sliding=True, slidingWindowSize=15, twoSensors=False, shootButton=False,
+                 distanceMax=30, sliding=True, slidingWindowSize=3, twoSensors=False, shootButton=False,
                  shootMin=0, shootMax=20, median=True):
 
         self.distanceMin = distanceMin - 10
