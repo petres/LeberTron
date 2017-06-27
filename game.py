@@ -702,6 +702,8 @@ class Game(object):
     def run(self):
         logging.info('Starting main loop...')
         while True:
+            t0 = time.time()
+
             d = self.controller.getInput()
 
             if d == Controller.QUIT:
@@ -780,7 +782,7 @@ class Game(object):
                         o.setRandomXPos(self.output)
                 self.time += 1
 
-            time.sleep(Game.sleepTime)
+            time.sleep(max(0, t0 - time.time() + Game.sleepTime))
 
         self.end("quit")
 
