@@ -10,7 +10,7 @@ import random
 import logging
 import string
 import threading
-import time as timeLib
+import time
 from ConfigParser import SafeConfigParser
 
 # Change working directory to the file directory
@@ -25,7 +25,7 @@ logging.basicConfig(filename='log/error.log', level=logging.DEBUG,
 
 # Catch stderr and create log messages...
 class StderrToHandler(object):
-    def __init__(self, logger=None): 
+    def __init__(self, logger=None):
         self.logger = logger or logging
         self._buffer = ''
 
@@ -433,7 +433,7 @@ class Output(object):
         # self.addSign((x,12), "time:    " + str(game.time))
         # self.addSign((x,13), "objects: " + str(len(Object.objects)))
 
-        
+
         if game.cupThere:
             self.printGlass((x - 13, self.screenSize[0] - 24), game.status["goodies"])
             self.printMl((x - 15, self.screenSize[0] - 31), game.status["ml"])
@@ -445,7 +445,7 @@ class Output(object):
 
         self.printRandomSigns((self.statusPos[0] + 1, self.statusPos[1] + 1), (self.statusSize[0], 7), 6)
 
- 
+
 
         if Goody.generateT:
             self.addSign((self.statusPos[0] + 2, self.statusPos[1] + 2), Goody.generateT * 10, color = 6)
@@ -459,18 +459,18 @@ class Output(object):
 
         if ml > 100:
             for i, line in enumerate(getFromFile("./objects/lifes/" + str(int(ml/100)) + ".txt")):
-                self.addSign((x, y + i), line, color = color) 
+                self.addSign((x, y + i), line, color = color)
 
         x += 8
         if ml > 10:
             for i, line in enumerate(getFromFile("./objects/lifes/" + str((ml/10)%10) + ".txt")):
-                self.addSign((x, y + i), line, color = color) 
+                self.addSign((x, y + i), line, color = color)
 
         x += 8
 
         for i, line in enumerate(getFromFile("./objects/lifes/" + str(ml%10) + ".txt")):
-            self.addSign((x, y + i), line, color = color) 
-       
+            self.addSign((x, y + i), line, color = color)
+
 
     def fieldCenteredOutput(self, file):
         signs = getFromFile(file)
@@ -527,7 +527,7 @@ class Output(object):
             logging.exception()
 
             # FIXME what does this sleep? do we really need to block for 2min?
-            timeLib.sleep(120)
+            time.sleep(120)
             raise
 
 
@@ -630,7 +630,7 @@ class KeyboardController(Controller):
             Goody.generateT = None
         elif c == ord('l'):
             return Controller.CUPTEST
-           
+
         # try:
         #     value = int(c)
         #     return float(value - 1)/8
@@ -780,7 +780,7 @@ class Game(object):
                         o.setRandomXPos(self.output)
                 self.time += 1
 
-            timeLib.sleep(Game.sleepTime)
+            time.sleep(Game.sleepTime)
 
         self.end("quit")
 
@@ -976,7 +976,7 @@ def main(s=None):
         controller.close()
 
         screen.refresh()
-    
+
 
 
 
