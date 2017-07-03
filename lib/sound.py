@@ -9,6 +9,7 @@ except ImportError as e:
     logging.warning(e.message)
 
 class Sound():
+    instances = {}
 
     def __init__(self, path='sounds/peng.wav'):
         logging.debug("init sound object %s" % path)
@@ -24,22 +25,46 @@ class Sound():
         self.loopThread = False
         self.loopExit = False
 
+        Sound.instances[path] = self
+
     def close(self):
         # Stop playing if there is any
         if self.loopThread:
-            self.stopLoop()
+            self.stopLoopI()
         else:
-            self.stop()
+            self.stopI()
         # Close Stream and Filehandle
         self.stream.close()
         self.wf.close()
+
+    @classmethod
+    def closeAll(cls):
+        for i in cls.instances.values():
+            i.close()
+
+    @classmethod
+    def play(cls, path):
+        if path is None:
+            return
+        if path not in cls.instances:
+            cls.instances[path] = Sound(path)
+        cls.instances[path].playI()
+
+    @classmethod
+    def startLoop(cls, path):
+        if path is None:
+            return
+
+    @classmethod
+    def stopLoop(cls, path):
+        pass
 
     def playCallback(self, in_data, frame_count, time_info, status):
         data = self.wf.readframes(frame_count)
         return (data, pyaudio.paContinue)
 
-    def play(self):
-        self.stop()
+    def playI(self):
+        self.stopI()
         self.wf.rewind()
         self.stream.start_stream()
 
@@ -49,17 +74,17 @@ class Sound():
                 self.play()
             time.sleep(0.2)
 
-    def stop(self):
+    def stopI(self):
         if not self.stream.is_stopped():
             logging.debug("stopping stream")
             self.stream.stop_stream()
             logging.debug("stream stopped")
 
-    def loop(self):
+    def startLoopI(self):
         self.loopThread = threading.Thread(target=self.loopCallback)
         self.loopThread.start()
 
-    def stopLoop(self):
+    def stopLoopI(self):
         logging.debug("stopping loop of sound object")
         if self.loopThread:
             self.loopExit = True

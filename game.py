@@ -40,12 +40,12 @@ class StderrToHandler(object):
             logger.warning(self._buffer.rstrip())
             self._buffer = ''
 
-sys.stderr = StderrToHandler()
+#sys.stderr = StderrToHandler()
 
 
 sys.path.append("./lib")
 
-import sound2 as soundLib
+from sound import Sound
 from botComm import BotComm
 
 locale.setlocale(locale.LC_ALL, "")
@@ -189,8 +189,7 @@ class Shoot(Object):
         args["signs"] = getFromFile("./objects/shoot.txt")
         args["color"] = 2
         args["speed"] = 1
-        if Shoot.soundShooting is not None:
-            Shoot.soundShooting.play()
+        Sound.play(Shoot.soundShooting)
         super(Shoot, self).__init__(game, **args)
 
     def getMapCoords(self):
@@ -202,8 +201,7 @@ class Shoot(Object):
                 if len(set(self.getPosArray()).intersection(o.getPosArray())) > 0:
                     Object.objects.remove(o)
                     Object.objects.remove(self)
-                    if Shoot.soundCollision is not None:
-                        Shoot.soundCollision.play()
+                    Sound.play(Shoot.soundCollision)
                     break
 
 
@@ -213,8 +211,7 @@ class Obstacle(Object):
 
     def collision(self):
         if not self.game.spaceShip.blinking:
-            if Obstacle.cSpaceship is not None:
-                Obstacle.cSpaceship.play()
+            Sound.play(Obstacle.cSpaceship)
             self.game.lifeLost()
 
 
@@ -235,8 +232,7 @@ class Goody(Object):
     generateT   = None
 
     def collision(self):
-        if Goody.cSpaceship is not None:
-            Goody.cSpaceship.play()
+        Sound.play(Goody.cSpaceship)
         self.game.status['ml']    += Goody.portion * Goody.types[self.type]["factor"]
         for i in range(Goody.types[self.type]["factor"]):
             self.game.status['goodies'].append(self.type)
@@ -579,8 +575,6 @@ class UltraSonicController(Controller):
             Goody.generateT = "A"
         elif c == ord('n'):
             Goody.generateT = "N"
-        elif c == ord('o'):
-            Goody.generateT = "O"
         elif c == ord('c'):
             Goody.generateT = None
 
@@ -597,6 +591,47 @@ class UltraSonicController(Controller):
             return 1 - float(self.inp.position - self.distPos[0]) / (self.distPos[1] - self.distPos[0])
         else:
             return float(self.inp.position - self.distPos[0]) / (self.distPos[1] - self.distPos[0])
+
+    def close(self):
+        self.inp.close()
+
+
+class CameraController(Controller):
+    def __init__(self, device = 0, treshold = 200, screen=None, position=True):
+        from camera import Camera
+        self.inp = Camera(device = device, treshold = treshold)
+
+        super(CameraController, self).__init__(screen, position)
+
+    def getInput(self):
+        c = self.screen.getch()
+
+        if c == ord('q'):
+            return Controller.QUIT
+        elif c == ord('r'):
+            return Controller.RETRY
+        elif c == ord('p'):
+            return Controller.PAUSE
+        elif c == ord('a'):
+            Goody.generateT = "A"
+        elif c == ord('n'):
+            Goody.generateT = "N"
+        elif c == ord('c'):
+            Goody.generateT = None
+
+        #if self.inp.fetchBullet():
+        #    return Controller.SHOOT
+
+        #if self.inp.state == -1:
+        #    return Controller.LEFT
+        #elif self.inp.state == 1:
+        #    return Controller.RIGHT
+
+    def getPosition(self):
+        if self.mirror:
+            return self.inp.position.value
+        else:
+            return 1 - self.inp.position.value
 
     def close(self):
         self.inp.close()
@@ -696,8 +731,7 @@ class Game(object):
         self.gameStarted = True
         self.cupTaken   = False
         Shoot.lastStartTime = 0
-        if Game.background is not None:
-            Game.background.loop()
+        Sound.startLoop(Game.background)
 
     def run(self):
         logging.info('Starting main loop...')
@@ -777,7 +811,7 @@ class Game(object):
                     if (self.time + 1) % Game.goodyCreationTime == 0:
                         g = Goody(self)
                         g.setRandomXPos(self.output)
-                    if self.time  % Game.obstacleCreationTime == 0:
+                    if self.time % Game.obstacleCreationTime == 0:
                         o = Obstacle(self)
                         o.setRandomXPos(self.output)
                 self.time += 1
@@ -794,11 +828,9 @@ class Game(object):
 
     def end(self, status):
         if status == "overLifes":
-            if Game.soundLost is not None:
-                Game.soundLost.play()
+            Sound.play(Game.soundLost)
         if status == "overFull":
-            if Game.soundLost is not None:
-                Game.soundFull.play()
+            Sound.play(Game.soundFull)
 
         logging.info("Ending game now (status=%s)" % status)
         logging.debug("threads alive: %s" % threading.active_count())
@@ -812,7 +844,7 @@ class Game(object):
         self.createObjects = False
         if Game.background is not None:
             logging.debug("Game.background.stopLoop()")
-            Game.background.stopLoop()
+            Sound.stopLoop(Game.background)
             logging.debug("background sound stopped successfully")
         logging.debug("Ending now, threads alive: %s" % threading.active_count())
 
@@ -862,14 +894,14 @@ def main(s=None):
     soundConfig.read('./etc/sound.cfg')
 
     if soundConfig.getboolean('General', 'enabled'):
-        Shoot.soundShooting     = soundLib.Sound(soundConfig.get('Shoot', 'shooting'))
-        Shoot.soundCollision    = soundLib.Sound(soundConfig.get('Shoot', 'obstacle'))
+        Shoot.soundShooting     = soundConfig.get('Shoot', 'shooting')
+        Shoot.soundCollision    = soundConfig.get('Shoot', 'obstacle')
 
-        Obstacle.cSpaceship     = soundLib.Sound(soundConfig.get('Spaceship', 'obstacle'))
-        Goody.cSpaceship        = soundLib.Sound(soundConfig.get('Spaceship', 'goody'))
-        Game.background         = soundLib.Sound(soundConfig.get('General', 'background'))
-        Game.soundLost          = soundLib.Sound(soundConfig.get('General', 'lost'))
-        Game.soundFull          = soundLib.Sound(soundConfig.get('General', 'full'))
+        Obstacle.cSpaceship     = soundConfig.get('Spaceship', 'obstacle')
+        Goody.cSpaceship        = soundConfig.get('Spaceship', 'goody')
+        Game.background         = soundConfig.get('General', 'background')
+        Game.soundLost          = soundConfig.get('General', 'lost')
+        Game.soundFull          = soundConfig.get('General', 'full')
 
 
     ############################################################################
@@ -914,16 +946,23 @@ def main(s=None):
     controllerConfig = SafeConfigParser()
     controllerConfig.read('./etc/controller.cfg')
     position = False
-    if controllerConfig.get('Controller', 'type') == "keyboard":
-        controller = KeyboardController(screen, position)
-    else:
+    controllerType = controllerConfig.get('Controller', 'type')
+    if controllerType == "ultrasonic":
         position = controllerConfig.getboolean('UltraSonic', 'position')
         UltraSonicController.mirror =  controllerConfig.getboolean('UltraSonic', 'mirror')
         UltraSonicController.distPos = (controllerConfig.getint('UltraSonic', 'minMovDist'),  controllerConfig.getint('UltraSonic', 'maxMovDist'))
-        #import ipdb; ipdb.set_trace()
         controller = UltraSonicController(controllerConfig.get('UltraSonic', 'serialPort'),
                                         controllerConfig.getboolean('UltraSonic', 'twoSensors'), controllerConfig.getboolean('UltraSonic', 'shootButton'),
                                         screen, position)
+    elif controllerType == "camera":
+        #import ipdb; ipdb.set_trace()et('Controller', 'type') == "camera":
+        position = controllerConfig.getboolean('Camera', 'position')
+        CameraController.mirror =  controllerConfig.getboolean('Camera', 'mirror')
+        controller = CameraController(device = controllerConfig.get('Camera', 'device'), treshold = controllerConfig.getint('Camera', 'treshold'),
+                                      screen = screen, position = position)
+    else:
+        controller = KeyboardController(screen, position)
+
 
 
 
@@ -963,13 +1002,7 @@ def main(s=None):
     finally:
         # Cleaning Up
         if soundConfig.getboolean('General', 'enabled'):
-            Shoot.soundShooting.close()
-            Shoot.soundCollision.close()
-            Obstacle.cSpaceship.close()
-            Goody.cSpaceship.close()
-            Game.background.close()
-            Game.soundFull.close()
-            Game.soundLost.close()
+            Sound.closeAll()
 
         if robot is not None:
             robot.close()
