@@ -11,11 +11,11 @@ class Camera(object):
         self.blurRadius = blurRadius
         self.resolution = resolution
         self.exitFlag = False
-
         logging.debug("CAMERA " + " ".join( list(map(lambda x: str(x), [device, treshold, blurRadius, resolution]))))
 
-        self.position = Value('d', 0)
+        self.position = Value('d', 0.5)
         self.exitFlag = Value('i', 0)
+
         self.p = Process(target=self.trackPositionCallback, args=(self.position, self.exitFlag))
         self.p.start()
 
@@ -55,7 +55,8 @@ class Camera(object):
                 #     break
             else:
                 logging.debug("Camera: Can not read ")
-                time.sleep(0.1)
+
+            time.sleep(0.05)
 
 
         # When everything done, release the capture
@@ -78,7 +79,7 @@ if __name__ == '__main__':
     c = Camera(device = 1)
     try:
         while True:
-            print c.position.value
+            #print c.position.value
             time.sleep(0.1)
     except KeyboardInterrupt:
         c.close()

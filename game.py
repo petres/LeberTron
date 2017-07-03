@@ -958,8 +958,9 @@ def main(s=None):
         #import ipdb; ipdb.set_trace()et('Controller', 'type') == "camera":
         position = controllerConfig.getboolean('Camera', 'position')
         CameraController.mirror =  controllerConfig.getboolean('Camera', 'mirror')
-        controller = CameraController(device = controllerConfig.get('Camera', 'device'), treshold = controllerConfig.getint('Camera', 'treshold'),
-                                      screen = screen, position = position)
+        controller = CameraController(device = controllerConfig.getint('Camera', 'device'), treshold = controllerConfig.getint('Camera', 'treshold'),
+                                      screen = screen, position = True)
+
     else:
         controller = KeyboardController(screen, position)
 
