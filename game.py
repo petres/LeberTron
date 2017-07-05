@@ -650,6 +650,8 @@ class KeyboardController(Controller):
     def __init__(self, screen, position):
         super(KeyboardController, self).__init__(screen, position)
 
+    def getInput(self):
+        return self.getKeyboardInput();
 
 
 
@@ -975,7 +977,7 @@ def main(s=None):
     #g.prepare()
     try:
         g.run()
-    except Exception, e:
+    except Exception as e:
         raise e
     finally:
         # Cleaning Up
@@ -985,14 +987,8 @@ def main(s=None):
         if robot is not None:
             robot.close()
 
-
         controller.close()
-
         screen.refresh()
-
-
-
-
 
 
 #main()
