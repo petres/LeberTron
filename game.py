@@ -541,108 +541,22 @@ class Controller(object):
     SWITCH_NON_ALC = -14
     CUPTEST = -15
 
-    def __init__(self, screen, position):
+    def __init__(self, screen, position, mirror = False):
         self.screen = screen
         self.position = position
+        self.mirror = mirror
 
     def getInput(self):
         # implemented by sub class
         raise NotImplementedError
 
-    def close(self):
-        pass
-
-
-class UltraSonicController(Controller):
-    distPos    = (5, 50)
-    def __init__(self, serialPort, twoSensors, shootButton, screen, position=False):
-        import inputComm as ultraSonicInput
-        self.inp = ultraSonicInput.InputComm(serialPort, twoSensors = twoSensors, shootButton = shootButton,
-                        distanceMin = UltraSonicController.distPos[0], distanceMax = UltraSonicController.distPos[1])
-
-        super(UltraSonicController, self).__init__(screen, position)
-
-    def getInput(self):
-        c = self.screen.getch()
-
-        if c == ord('q'):
-            return Controller.QUIT
-        elif c == ord('r'):
-            return Controller.RETRY
-        elif c == ord('p'):
-            return Controller.PAUSE
-        elif c == ord('a'):
-            Goody.generateT = "A"
-        elif c == ord('n'):
-            Goody.generateT = "N"
-        elif c == ord('c'):
-            Goody.generateT = None
-
-        if self.inp.fetchBullet():
-            return Controller.SHOOT
-
-        if self.inp.state == -1:
-            return Controller.LEFT
-        elif self.inp.state == 1:
-            return Controller.RIGHT
-
     def getPosition(self):
         if self.mirror:
-            return 1 - float(self.inp.position - self.distPos[0]) / (self.distPos[1] - self.distPos[0])
+            return 1 - self.getPositionI()
         else:
-            return float(self.inp.position - self.distPos[0]) / (self.distPos[1] - self.distPos[0])
+            return self.getPositionI()
 
-    def close(self):
-        self.inp.close()
-
-
-class CameraController(Controller):
-    def __init__(self, device = 0, treshold = 200, screen=None, position=True):
-        from camera import Camera
-        self.inp = Camera(device = device, treshold = treshold)
-
-        super(CameraController, self).__init__(screen, position)
-
-    def getInput(self):
-        c = self.screen.getch()
-
-        if c == ord('q'):
-            return Controller.QUIT
-        elif c == ord('r'):
-            return Controller.RETRY
-        elif c == ord('p'):
-            return Controller.PAUSE
-        elif c == ord('a'):
-            Goody.generateT = "A"
-        elif c == ord('n'):
-            Goody.generateT = "N"
-        elif c == ord('c'):
-            Goody.generateT = None
-
-        #if self.inp.fetchBullet():
-        #    return Controller.SHOOT
-
-        #if self.inp.state == -1:
-        #    return Controller.LEFT
-        #elif self.inp.state == 1:
-        #    return Controller.RIGHT
-
-    def getPosition(self):
-        if self.mirror:
-            return self.inp.position.value
-        else:
-            return 1 - self.inp.position.value
-
-    def close(self):
-        self.inp.close()
-
-
-class KeyboardController(Controller):
-
-    def __init__(self, screen, position):
-        super(KeyboardController, self).__init__(screen, position)
-
-    def getInput(self):
+    def getKeyboardInput(self):
         c = self.screen.getch()
 
         if c == curses.KEY_LEFT:
@@ -666,12 +580,77 @@ class KeyboardController(Controller):
         elif c == ord('l'):
             return Controller.CUPTEST
 
-        # try:
-        #     value = int(c)
-        #     return float(value - 1)/8
-        # except ValueError:
-
         return None
+
+    def close(self):
+        pass
+
+
+class UltraSonicController(Controller):
+    distPos    = (5, 50)
+    def __init__(self, serialPort, twoSensors, shootButton, screen=None, position=True, mirror=False):
+        import inputComm as ultraSonicInput
+        self.inp = ultraSonicInput.InputComm(serialPort, twoSensors = twoSensors, shootButton = shootButton,
+                        distanceMin = UltraSonicController.distPos[0], distanceMax = UltraSonicController.distPos[1])
+
+        super(UltraSonicController, self).__init__(screen, position, mirror)
+
+    def getInput(self):
+        k = self.getKeyboardInput();
+
+        if k is not None:
+            return k
+
+        if self.inp.fetchBullet():
+            return Controller.SHOOT
+
+        if not self.position:
+            if self.inp.state == -1:
+                return Controller.LEFT
+            elif self.inp.state == 1:
+                return Controller.RIGHT
+
+    def getPositionI(self):
+        return float(self.inp.position - self.distPos[0]) / (self.distPos[1] - self.distPos[0])
+
+    def close(self):
+        self.inp.close()
+
+
+class CameraController(Controller):
+    def __init__(self, device, threshold, resolution, blurRadius, screen=None, position=True, mirror=False):
+        from camera import Camera
+        self.inp = Camera(device = device, threshold = threshold, resolution = resolution, blurRadius = blurRadius)
+
+        super(CameraController, self).__init__(screen, position)
+
+    def getInput(self):
+        k = self.getKeyboardInput();
+
+        if k is not None:
+            return k
+
+        #if self.inp.fetchBullet():
+        #    return Controller.SHOOT
+
+        #if self.inp.state == -1:
+        #    return Controller.LEFT
+        #elif self.inp.state == 1:
+        #    return Controller.RIGHT
+
+    def getPositionI(self):
+        return self.inp.position.value
+
+    def close(self):
+        self.inp.close()
+
+
+class KeyboardController(Controller):
+
+    def __init__(self, screen, position):
+        super(KeyboardController, self).__init__(screen, position)
+
+
 
 
 ################################################################################
@@ -945,24 +924,22 @@ def main(s=None):
     ############################################################################
     controllerConfig = SafeConfigParser()
     controllerConfig.read('./etc/controller.cfg')
-    position = False
     controllerType = controllerConfig.get('Controller', 'type')
     if controllerType == "ultrasonic":
-        position = controllerConfig.getboolean('UltraSonic', 'position')
-        UltraSonicController.mirror =  controllerConfig.getboolean('UltraSonic', 'mirror')
         UltraSonicController.distPos = (controllerConfig.getint('UltraSonic', 'minMovDist'),  controllerConfig.getint('UltraSonic', 'maxMovDist'))
         controller = UltraSonicController(controllerConfig.get('UltraSonic', 'serialPort'),
                                         controllerConfig.getboolean('UltraSonic', 'twoSensors'), controllerConfig.getboolean('UltraSonic', 'shootButton'),
-                                        screen, position)
+                                        screen = screen, position = controllerConfig.getboolean('UltraSonic', 'position'), mirror = controllerConfig.getboolean('Camera', 'mirror'))
     elif controllerType == "camera":
         #import ipdb; ipdb.set_trace()et('Controller', 'type') == "camera":
         position = controllerConfig.getboolean('Camera', 'position')
-        CameraController.mirror =  controllerConfig.getboolean('Camera', 'mirror')
-        controller = CameraController(device = controllerConfig.getint('Camera', 'device'), treshold = controllerConfig.getint('Camera', 'treshold'),
-                                      screen = screen, position = True)
+        controller = CameraController(device = controllerConfig.getint('Camera', 'device'), threshold = controllerConfig.getint('Camera', 'threshold'),
+                                      resolution = (controllerConfig.getint('Camera', 'resolutionX'), controllerConfig.getint('Camera', 'resolutionY')),
+                                      blurRadius = controllerConfig.getint('Camera', 'blurRadius'),
+                                      screen = screen, position = True, mirror = controllerConfig.getboolean('Camera', 'mirror'))
 
     else:
-        controller = KeyboardController(screen, position)
+        controller = KeyboardController(screen = screen, position = False)
 
 
 
