@@ -12,7 +12,7 @@ class Sound():
     instances = {}
 
     def __init__(self, path='sounds/peng.wav'):
-        logging.debug("init sound object %s" % path)
+        #logging.debug("init sound object %s" % path)
         self.p = pyaudio.PyAudio()
         self.wf = wave.open(path, 'rb')
         self.stream = self.p.open(
@@ -22,110 +22,77 @@ class Sound():
             output=True,
             start=False,
             stream_callback=self.playCallback)
-        self.loopThread = False
-        self.loopExit = False
+
+        #logging.debug("channels: %d rate: %d" % (self.wf.getnchannels(), self.wf.getframerate()))
+
+        self.loop = False;
 
         Sound.instances[path] = self
 
-    def close(self):
-        # Stop playing if there is any
-        if self.loopThread:
-            self.stopLoopI()
-        else:
-            self.stopI()
-        # Close Stream and Filehandle
-        self.stream.close()
-        self.wf.close()
+    def playCallback(self, in_data, frame_count, time_info, status):
+        data = self.wf.readframes(frame_count)
+        #logging.debug("PLAY CALLBACK " + str(len(data)) + " " + str(frame_count))
+
+        if self.loop:
+            if len(data) < 4096: # If file is over then rewind.
+                self.wf.rewind()
+                data += self.wf.readframes(frame_count - len(data)/4)
+
+        return (data, pyaudio.paContinue)
+
+    @classmethod
+    def getInstance(cls, path):
+        if path not in cls.instances:
+            cls.instances[path] = Sound(path)
+        return cls.instances[path]
 
     @classmethod
     def closeAll(cls):
         for i in cls.instances.values():
-            i.close()
+            i.closeI()
 
     @classmethod
     def play(cls, path):
         if path is None:
             return
-        if path not in cls.instances:
-            cls.instances[path] = Sound(path)
-        cls.instances[path].playI()
+        Sound.getInstance(path).playI()
 
     @classmethod
     def startLoop(cls, path):
         if path is None:
             return
+        i = Sound.getInstance(path)
+        i.loop = True;
+        i.playI()
 
     @classmethod
     def stopLoop(cls, path):
-        pass
-
-    def playCallback(self, in_data, frame_count, time_info, status):
-        data = self.wf.readframes(frame_count)
-        return (data, pyaudio.paContinue)
+        if path is None:
+            return
+        i = Sound.getInstance(path)
+        i.loop = False;
 
     def playI(self):
         self.stopI()
         self.wf.rewind()
         self.stream.start_stream()
 
-    def loopCallback(self):
-        while not self.loopExit:
-            if not self.stream.is_active():
-                self.play()
-            time.sleep(0.2)
-
     def stopI(self):
         if not self.stream.is_stopped():
-            logging.debug("stopping stream")
+            #logging.debug("stopping stream")
             self.stream.stop_stream()
-            logging.debug("stream stopped")
+            #logging.debug("stream stopped")
 
-    def startLoopI(self):
-        self.loopThread = threading.Thread(target=self.loopCallback)
-        self.loopThread.start()
-
-    def stopLoopI(self):
-        logging.debug("stopping loop of sound object")
-        if self.loopThread:
-            self.loopExit = True
-            logging.debug("stopping sound: join thread")
-            self.loopThread.join()
-            logging.debug("joined")
-            time.sleep(0.3)
-        self.stop()
-        self.loopThread = False
-        self.loopExit = False
-        logging.debug("end stopLoop")
+    def closeI(self):
+        self.stopI()
+        self.stream.close()
+        self.wf.close()
 
 
 if __name__ == '__main__':
-
-    theme = Sound("sounds/theme_sample.wav")
-    theme.loop()
-
-    # krach = Sound("sounds/krach.wav")
-
+    Sound.startLoop("sounds/theme_sample.wav")
     try:
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
-        theme.stopLoop()
-
-    theme.loop()
-
-    try:
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        theme.close()
-        print "Ciao..."
-
-    # theme.play()
-    # time.sleep(2)
-
-    # s = Sound()
-    # s.play()
-    # time.sleep(1)
-    # s.play()
-    # time.sleep(1)
-    # s.close()
+        Sound.closeAll()
