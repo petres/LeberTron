@@ -538,39 +538,61 @@ class Controller(object):
     RETRY   = -11
     SHOOT   = -12
     PAUSE   = -13
-    SWITCH_NON_ALC = -14
     CUPTEST = -15
 
-    def __init__(self, screen, position, mirror = False):
+    def __init__(self, screen = None, position = False, mirror = False, margin = 0):
+        self.imp = None
         self.screen = screen
-        self.position = position
-        self.mirror = mirror
+        self.position = position == "true"
+        self.mirror = mirror == "true"
+        self.margin = int(margin)
+
+    def setImp(self, imp):
+        self.imp = imp
 
     def getInput(self):
-        # implemented by sub class
-        raise NotImplementedError
+        c, k = self.getKeyboardInput();
+
+        if k is not None:
+            return k
+
+        if self.imp is not None:
+            return self.imp.getInput(c)
 
     def getPosition(self):
+        pos = self.imp.getPosition()
+
+        if self.margin > 0:
+            pos = pos*(1 + 0.01*2*self.margin) - 0.01*self.margin
+
+        if pos > 1:
+            pos = 1
+        elif pos < 0:
+            pos = 0
+
         if self.mirror:
-            return 1 - self.getPositionI()
+            return 1 - pos
         else:
-            return self.getPositionI()
+            return pos
 
     def getKeyboardInput(self):
+        if screen is None:
+            return None
+
         c = self.screen.getch()
 
         if c == curses.KEY_LEFT:
-            return Controller.LEFT
+            return (c, Controller.LEFT)
         elif c == curses.KEY_RIGHT:
-            return Controller.RIGHT
+            return (c, Controller.RIGHT)
         elif c == ord('q'):
-            return Controller.QUIT
+            return (c, Controller.QUIT)
         elif c == ord('r'):
-            return Controller.RETRY
+            return (c, Controller.RETRY)
         elif c == ord(' '):
-            return Controller.SHOOT
+            return (c, Controller.SHOOT)
         elif c == ord('p'):
-            return Controller.PAUSE
+            return (c, Controller.PAUSE)
         elif c == ord('n'):
             Goody.generateT = "N"
         elif c == ord('o'):
@@ -578,80 +600,15 @@ class Controller(object):
         elif c == ord('c'):
             Goody.generateT = None
         elif c == ord('l'):
-            return Controller.CUPTEST
-
-        return None
-
-    def close(self):
-        pass
+            return (c, Controller.CUPTEST)
 
 
-class UltraSonicController(Controller):
-    distPos    = (5, 50)
-    def __init__(self, serialPort, twoSensors, shootButton, screen=None, position=True, mirror=False):
-        import inputComm as ultraSonicInput
-        self.inp = ultraSonicInput.InputComm(serialPort, twoSensors = twoSensors, shootButton = shootButton,
-                        distanceMin = UltraSonicController.distPos[0], distanceMax = UltraSonicController.distPos[1])
-
-        super(UltraSonicController, self).__init__(screen, position, mirror)
-
-    def getInput(self):
-        k = self.getKeyboardInput();
-
-        if k is not None:
-            return k
-
-        if self.inp.fetchBullet():
-            return Controller.SHOOT
-
-        if not self.position:
-            if self.inp.state == -1:
-                return Controller.LEFT
-            elif self.inp.state == 1:
-                return Controller.RIGHT
-
-    def getPositionI(self):
-        return float(self.inp.position - self.distPos[0]) / (self.distPos[1] - self.distPos[0])
+        return (c, None)
 
     def close(self):
-        self.inp.close()
+        if self.imp is not None:
+            self.imp.close()
 
-
-class CameraController(Controller):
-    def __init__(self, device, threshold, resolution, blurRadius, screen=None, position=True, mirror=False):
-        from camera import Camera
-        self.inp = Camera(device = device, threshold = threshold, resolution = resolution, blurRadius = blurRadius)
-
-        super(CameraController, self).__init__(screen, position)
-
-    def getInput(self):
-        k = self.getKeyboardInput();
-
-        if k is not None:
-            return k
-
-        #if self.inp.fetchBullet():
-        #    return Controller.SHOOT
-
-        #if self.inp.state == -1:
-        #    return Controller.LEFT
-        #elif self.inp.state == 1:
-        #    return Controller.RIGHT
-
-    def getPositionI(self):
-        return self.inp.position.value
-
-    def close(self):
-        self.inp.close()
-
-
-class KeyboardController(Controller):
-
-    def __init__(self, screen, position):
-        super(KeyboardController, self).__init__(screen, position)
-
-    def getInput(self):
-        return self.getKeyboardInput();
 
 
 
@@ -926,23 +883,26 @@ def main(s=None):
     ############################################################################
     controllerConfig = SafeConfigParser()
     controllerConfig.read('./etc/controller.cfg')
-    controllerType = controllerConfig.get('Controller', 'type')
+
+    kwargsController = dict(controllerConfig.items("Controller"))
+
+    controllerType = kwargsController['type']
+    del kwargsController['type']
+
+    kwargsController['screen'] = screen
+
+    controller = Controller(**kwargsController)
+    imp = None
     if controllerType == "ultrasonic":
-        UltraSonicController.distPos = (controllerConfig.getint('UltraSonic', 'minMovDist'),  controllerConfig.getint('UltraSonic', 'maxMovDist'))
-        controller = UltraSonicController(controllerConfig.get('UltraSonic', 'serialPort'),
-                                        controllerConfig.getboolean('UltraSonic', 'twoSensors'), controllerConfig.getboolean('UltraSonic', 'shootButton'),
-                                        screen = screen, position = controllerConfig.getboolean('UltraSonic', 'position'), mirror = controllerConfig.getboolean('Camera', 'mirror'))
+        from inputComm import InputComm
+        imp = InputComm(**dict(controllerConfig.items("UltraSonic")))
     elif controllerType == "camera":
-        #import ipdb; ipdb.set_trace()et('Controller', 'type') == "camera":
-        position = controllerConfig.getboolean('Camera', 'position')
-        controller = CameraController(device = controllerConfig.getint('Camera', 'device'), threshold = controllerConfig.getint('Camera', 'threshold'),
-                                      resolution = (controllerConfig.getint('Camera', 'resolutionX'), controllerConfig.getint('Camera', 'resolutionY')),
-                                      blurRadius = controllerConfig.getint('Camera', 'blurRadius'),
-                                      screen = screen, position = True, mirror = controllerConfig.getboolean('Camera', 'mirror'))
+        from camera import Camera
+        kwargs = dict(controllerConfig.items("Camera"))
+        kwargs['controller'] = controller
+        imp = Camera(**kwargs)
 
-    else:
-        controller = KeyboardController(screen = screen, position = False)
-
+    controller.setImp(imp)
 
 
 
@@ -975,6 +935,7 @@ def main(s=None):
 
 
     #g.prepare()
+    #g.run()
     try:
         g.run()
     except Exception as e:

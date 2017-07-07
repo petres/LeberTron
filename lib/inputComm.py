@@ -57,6 +57,21 @@ class InputComm():
             logging.error("Problem in InputComm: '%s'" % str(e))
             raise e
 
+
+    def getInput(self):
+        if self.fetchBullet():
+            return Controller.SHOOT
+
+        if not self.position:
+            if self.state == -1:
+                return Controller.LEFT
+            elif self.state == 1:
+                return Controller.RIGHT
+
+    def getPosition(self):
+        return float(self.position - self.distPos[0]) / (self.distPos[1] - self.distPos[0])
+
+
     def close(self):
         if self.bulletLock.locked():
             self.bulletLock.release()
@@ -136,9 +151,9 @@ class InputComm():
                     distance = vals[0]
                     distance = self.transformVal(distance)
                     shoot = vals[1]
-                    
+
                     if int(shoot) == 1:
-                        
+
                         self.bulletLock.acquire()
                         self.bullets += 1
                         self.bulletLock.release()
