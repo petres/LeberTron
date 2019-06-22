@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 from multiprocessing import Process, Value
 from collections import deque
 import time
@@ -35,8 +37,9 @@ class Camera(object):
 
     def getInput(self, c):
 
-        if self.shootFlag.value == 1:
+        if self.shootFlag.value == 1 :
             self.shootFlag.value == 0
+            
             return self.controller.SHOOT
 
         if c == ord('n'):
@@ -154,12 +157,12 @@ class Camera(object):
 
 if __name__ == '__main__':
     import sys
-    from ConfigParser import SafeConfigParser
+    from configparser import ConfigParser
 
     logging.basicConfig(stream=sys.stdout, level=logging.DEBUG,
                         format='%(message)s')
 
-    controllerConfig = SafeConfigParser()
+    controllerConfig = ConfigParser()
     controllerConfig.read('./etc/controller.cfg')
     kwargs = dict(controllerConfig.items("Camera"))
     camera = Camera(**kwargs)

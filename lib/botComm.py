@@ -11,7 +11,7 @@ import serial
 import threading
 import time
 import logging
-from Queue import Queue
+from queue import Queue
 
 
 class BotComm(object):
@@ -156,12 +156,12 @@ class BotComm(object):
 
 if __name__ == '__main__':
     def youGotMsg(msg):
-        print msg
+        print(msg)
 
     c = BotComm('/dev/ttyS99', youGotMsg)
     while True:
         if c.ready:
-            print "Ready"
+            print("Ready")
             c.pour(str(10), str(10), str(10),
                    str(10), str(10), str(10), str(10))
 

@@ -1,5 +1,4 @@
-#!/usr/bin/python2
-# -*- coding: utf-8 -*-
+#!/usr/bin/python
 
 import os
 import sys
@@ -11,7 +10,8 @@ import logging
 import string
 import threading
 import time
-from ConfigParser import SafeConfigParser
+import math
+from configparser import ConfigParser
 
 # Change working directory to the file directory
 abspath = os.path.abspath(__file__)
@@ -59,7 +59,8 @@ inp = None
 def getFromFile(fileName):
     # f = codecs.open("./objects/" + fileName + ".txt", 'r', "utf-8")
     f = open(fileName, 'r')
-    content = f.read().decode('utf-8')
+    #content = f.read().decode('utf-8')
+    content = f.read()
     signsArray = []
     for line in content.split("\n"):
         signsArray.append(line)
@@ -97,14 +98,14 @@ class Object(object):
 
         self.info = {}
         self.info['maxHeight']  = len(signs)
-        self.info['rHeight']    = (len(signs) - 1)/2
+        self.info['rHeight']    = (len(signs) - 1)//2
 
         tmp  = []
         for line in signs:
             tmp.append(len(line))
 
         self.info['maxWidth']   = max(tmp)
-        self.info['rWidth']     = (self.info['maxWidth'] - 1)/2
+        self.info['rWidth']     = (self.info['maxWidth'] - 1)//2
 
 
     def setRandomXPos(self, output, y=None):
@@ -142,7 +143,7 @@ class Object(object):
         pass
 
     def getMapCoords(self):
-        return (self.coords[0], self.coords[1] + (self.game.time - self.startTime) / self.speed)
+        return (self.coords[0], self.coords[1] + (self.game.time - self.startTime) // self.speed)
 
     def draw(self, output):
         x, y = self.getMapCoords()
@@ -161,12 +162,15 @@ class Object(object):
                 self.currentSigns = self.currentSigns % len(self.signsArray)
                 self.signs = self.signsArray[self.currentSigns]
 
+
         for i, line in enumerate(self.signs):
             py = y - self.info['rHeight'] + i
+
             if py <= output.fieldSize[1] and py >= 0:
                 for j, sign in enumerate(line):
                     if sign != " ":
                         px = x - self.info['rWidth'] + j
+                        logging.debug("FFFF %s %s", self.info['rHeight'], self.info['rWidth'])
                         output.addSign((px, py), sign, field = True, color = self.color)
             #py = y - (len(self.signs) - 1)/2 + i
             #if py <= output.fieldSize[1] and py >= 0:
@@ -193,7 +197,7 @@ class Shoot(Object):
         super(Shoot, self).__init__(game, **args)
 
     def getMapCoords(self):
-        return (self.coords[0], self.coords[1] - (self.game.time - self.startTime) / self.speed)
+        return (self.coords[0], self.coords[1] - (self.game.time - self.startTime) // self.speed)
 
     def check(self):
         for o in Object.objects:
@@ -388,12 +392,12 @@ class Output(object):
     def printField(self):
         fieldColor = 0
         for i in range(self.fieldPos[0] - 1, self.fieldPos[0] + self.fieldSize[0] + 2):
-            self.addSign((i, self.fieldPos[1] - 1), u"█", color = fieldColor)
-            self.addSign((i, self.fieldPos[1] + self.fieldSize[1] + 1), u"█", color = fieldColor)
+            self.addSign((i, self.fieldPos[1] - 1), "█", color = fieldColor)
+            self.addSign((i, self.fieldPos[1] + self.fieldSize[1] + 1), "█", color = fieldColor)
 
         for i in range(self.fieldPos[1] - 1, self.fieldPos[1] + self.fieldSize[1] + 2):
-            self.addSign((self.fieldPos[0] - 1, i), u"█", color = fieldColor)
-            self.addSign((self.fieldPos[0] + self.fieldSize[0] + 1, i), u"█", color = fieldColor)
+            self.addSign((self.fieldPos[0] - 1, i), "█", color = fieldColor)
+            self.addSign((self.fieldPos[0] + self.fieldSize[0] + 1, i), "█", color = fieldColor)
 
     def clearField(self, pos, size, sign=" "):
         for i in range(pos[1], pos[1] + size[1] + 1):
@@ -436,7 +440,7 @@ class Output(object):
 
         if self.screenSize[0] - 31 - (y + 15) > 10:
             for i, line in enumerate(getFromFile("./objects/lebertron.txt")):
-                self.addSign((self.statusPos[0] + 1,  (y + 16) + (self.screenSize[0] - 31 - (y + 15) - 9)/2 + i), line, color = 7)
+                self.addSign((self.statusPos[0] + 1,  (y + 16) + (self.screenSize[0] - 31 - (y + 15) - 9)//2 + i), line, color = 7)
 
 
         self.printRandomSigns((self.statusPos[0] + 1, self.statusPos[1] + 1), (self.statusSize[0], 7), 6)
@@ -472,8 +476,8 @@ class Output(object):
         signs = getFromFile(file)
         w, h = (len(signs[0]), len(signs))
         x, y = self.fieldSize
-        bx = (x - w) / 2
-        by = (y - h) / 2
+        bx = (x - w) // 2
+        by = (y - h) // 2
         for i, line in enumerate(signs):
             ty = by + i
             self.addSign((bx, ty), line, True)
@@ -511,8 +515,7 @@ class Output(object):
             y += self.fieldPos[1]
         try:
             if color:
-                screen.addstr(
-                    y, x, sign.encode('utf_8'), curses.color_pair(color))
+                screen.addstr(y, x, sign, curses.color_pair(color))
             else:
                 screen.addstr(y, x, sign.encode('utf_8'))
         except:
@@ -636,7 +639,7 @@ class Game(object):
         self.pause      = False
         self.spaceShip  = SpaceShip(self)
         self.spaceShip.coords = (
-            self.output.fieldSize[0] / 2, self.output.fieldSize[1] - 2)
+            self.output.fieldSize[0] // 2, self.output.fieldSize[1] - 2)
         self.countdown  = 0
 
         self.status     = {}
@@ -828,7 +831,7 @@ def main(s=None):
     ############################################################################
     # Sound Config
     ############################################################################
-    soundConfig = SafeConfigParser()
+    soundConfig = ConfigParser()
     soundConfig.read('./etc/sound.cfg')
 
     if soundConfig.getboolean('General', 'enabled'):
@@ -846,7 +849,7 @@ def main(s=None):
     # Design Config
     ############################################################################
     # default factor == 1
-    designConfig = SafeConfigParser({'factor': '1'})
+    designConfig = ConfigParser({'factor': '1'})
     designConfig.read('./etc/design.cfg')
 
     # Set obstacles files
@@ -881,7 +884,7 @@ def main(s=None):
     ############################################################################
     # Controller Config
     ############################################################################
-    controllerConfig = SafeConfigParser()
+    controllerConfig = ConfigParser()
     controllerConfig.read('./etc/controller.cfg')
 
     kwargsController = dict(controllerConfig.items("Controller"))
@@ -917,10 +920,10 @@ def main(s=None):
     ############################################################################
 
     robot = None
-    robotConfig = SafeConfigParser()
+    robotConfig = ConfigParser()
     robotConfig.read('./etc/robot.cfg')
 
-    Game.sleepTime = float(robotConfig.getint('Game', 'sleepTime'))/100
+    Game.sleepTime = robotConfig.getint('Game', 'sleepTime')/100
     Game.obstacleCreationTime = robotConfig.getint('Game', 'obstacleCreationTime')
     Game.goodyCreationTime = robotConfig.getint('Game', 'goodyCreationTime')
 
