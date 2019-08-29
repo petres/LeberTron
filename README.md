@@ -7,3 +7,12 @@ A text-only space invaders clone, where you can collect different ingridients an
 
 
 Barwin was used as pouring mechanism (using GIT branch [lebertron](https://github.com/rfjakob/barwin-arduino/tree/lebertron)).
+
+
+Install and Run
+---------------
+
+    git clone https://github.com/petres/LeberTron
+    sudo apt install python3-serial python3-opencv python3-pyaudio
+    python3 game.py   # run it!
+
