@@ -5,7 +5,7 @@ import logging
 try:
     import pyaudio
 except ImportError as e:
-    logging.warning(e.message)
+    logging.warning(e)
 
 class Sound():
     instances = {}
