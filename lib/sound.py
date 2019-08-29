@@ -1,7 +1,6 @@
 import wave
 import time
 import logging
-import threading
 
 try:
     import pyaudio
